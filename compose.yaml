@@ -1,0 +1,19 @@
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Run npm run db:start to generate .env}
+      MYSQL_DATABASE: ${DB_NAME:-requirements_workbench}
+      MYSQL_USER: ${DB_USER:-workbench}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Run npm run db:start to generate .env}
+    ports:
+      - "127.0.0.1:${DB_PORT:-13308}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysql --protocol=tcp -h 127.0.0.1 -u$$MYSQL_USER $$MYSQL_DATABASE -Nse 'SELECT 1'"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+volumes:
+  mysql-data:

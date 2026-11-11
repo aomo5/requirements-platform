@@ -1,0 +1,38 @@
+{
+  "name": "requirements-platform",
+  "version": "1.0.0",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "db:start": "node scripts/ensure-env.js && node scripts/db.js start",
+    "db:init": "node scripts/storage.js init",
+    "db:stop": "node scripts/db.js stop",
+    "db:migrate": "node scripts/storage.js migrate",
+    "db:verify": "node scripts/storage.js verify",
+    "db:export": "node scripts/storage.js export",
+    "test": "node --test tests/entry-create.test.js tests/gitee-sync.test.js tests/ai-context.test.js tests/design-export.test.js tests/flow-cli.test.js tests/design-cli.test.js tests/workbench-cli.test.js",
+    "db:status": "node scripts/db.js status",
+    "gitee": "node scripts/gitee.js",
+    "test:gitee": "node --test tests/gitee-sync.test.js",
+    "flow": "node scripts/flows.js",
+    "test:flow-cli": "node --test tests/flow-cli.test.js tests/flow-edit-model.test.js tests/flow-batch.test.js",
+    "design": "node scripts/designs.js",
+    "workbench": "node scripts/workbench.js",
+    "cli:package": "node scripts/package-cli.js",
+    "serve:team": "node scripts/service.js start --lan",
+    "restart:team": "node scripts/service.js restart --lan",
+    "test:workbench-cli": "node --test tests/workbench-cli.test.js tests/flow-cli.test.js tests/design-cli.test.js",
+    "test:design-cli": "node --test tests/design-cli.test.js tests/design-edit-model.test.js tests/design-batch.test.js"
+  },
+  "dependencies": {
+    "css-select": "5.2.2",
+    "fflate": "0.8.3",
+    "mysql2": "3.24.4",
+    "parse5": "7.3.0",
+    "playwright-core": "1.64.1"
+  },
+  "engines": {
+    "node": ">=20.12"
+  }
+}
