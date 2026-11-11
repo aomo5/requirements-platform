@@ -1,0 +1,88 @@
+"use strict";
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('fs'),os=require('os'),path=require('path');
+const {scanRequirements}=require('../lib/scan');
+const {MysqlStorage}=require('../lib/mysql-storage');
+const {databaseConfig}=require('../lib/storage-config');
+const {prepareMarkdown,stampElements,resolveElement,elementRecords}=require('../lib/stable-identities');
+const {backup,migrate,verify,exportData,rollback,TABLES}=require('../lib/storage-transfer');
+const {createDesignStore}=require('../lib/design-store');
+const {readRequirementRules}=require('../lib/requirement-rules');
+const {createAnnotationStore}=require('../lib/annotation-store');
+
+test('stable source IDs survive wording, heading and order changes; ambiguous IDs are rejected',()=>{
+  const raw='# 规则\n\n订单可以提交。\n\n- 空订单不可提交\n- 有效订单可提交\n\n| 状态 | 操作 |\n| --- | --- |\n| 已支付 | 查看 |\n\n> 异常需重试\n\n```html\n<div>原代码</div>\n```\n';
+  const first=prepareMarkdown(raw,'00-测试/存储/需求文档.md');
+  assert.equal(first.rules.length,5);assert.ok(first.rules.every(r=>r.stable));
+  assert.equal(prepareMarkdown(first.content,'00-测试/存储/需求文档.md').content,first.content);
+  const edited=prepareMarkdown(first.content.replace('订单可以提交。','订单确认后提交。').replace('# 规则','# 订单规则'),'00-测试/存储/需求文档.md');
+  assert.equal(edited.rules[0].blockId,first.rules[0].blockId);assert.notEqual(edited.rules[0].quote,first.rules[0].quote);
+  const duplicate=prepareMarkdown(first.content+'\n\n复制内容 <!-- wb-rule:'+first.rules[0].blockId+' -->\n','00-测试/存储/需求文档.md');
+  assert.ok(duplicate.rules.filter(r=>r.blockId===first.rules[0].blockId).every(r=>r.ambiguous));
+  const recreated=prepareMarkdown(raw,'00-测试/存储/需求文档.md');
+  assert.notEqual(recreated.rules[0].blockId,first.rules[0].blockId);
+});
+test('static element IDs survive text/layout edits; duplicates get distinct new IDs',()=>{
+  const original='<!doctype html><html><head><style>button{color:red}</style></head><body><div><button id="submit">提交</button></div><script>const x="<button>fake</button>";</script></body></html>';
+  const html=stampElements(original), element=resolveElement(html,'#submit');
+  assert.ok(element.id);assert.equal(stampElements(html),html);
+  assert.ok(html.includes('<script>const x="<button>fake</button>";</script>'));
+  const edited=html.replace('提交','确认').replace('<div ','<section><div ').replace('</div>','</div></section>');
+  assert.equal(resolveElement(edited,`[data-wb-element="${element.id}"]`).id,element.id);
+  const duplicate=stampElements(html.replace('</body>',`<button data-wb-element="${element.id}">复制</button></body>`));
+  assert.equal(resolveElement(duplicate,`[data-wb-element="${element.id}"]`),null);
+  const ids=elementRecords(duplicate).map(e=>e.id);assert.equal(new Set(ids).size,ids.length);
+});
+test('MySQL migration, transaction conflicts, links, revisions and lossless file rollback',async()=>{
+  const config={...databaseConfig(),database:'requirements_workbench_test'};
+  assert.equal(config.database,'requirements_workbench_test');
+  const temp=fs.mkdtempSync(path.join(os.tmpdir(),'wb-storage-test-')),root=path.join(temp,'requirements'),entryPath='00-测试/存储',dir=path.join(root,entryPath);
+  fs.mkdirSync(path.join(dir,'原型设计','.design-history'),{recursive:true});
+  fs.writeFileSync(path.join(dir,'需求文档.md'),'# 订单\n\n有效订单可以提交。\n');
+  const page={id:'page-one',name:'订单',width:390,height:844,x:0,y:0,html:'<button id="submit">提交</button>',source:'',route:'#ready'};
+  const v1={schemaVersion:1,revision:1,updatedAt:'2026-10-01T00:00:00.000Z',pages:[page]};
+  const v2={...v1,revision:2,pages:[{...page,name:'确认订单'}]};
+  fs.writeFileSync(path.join(dir,'原型设计','.design-history','1.json'),JSON.stringify(v1));
+  fs.writeFileSync(path.join(dir,'原型设计','设计工作台.json'),JSON.stringify(v2));
+  const db=new MysqlStorage(root,()=>scanRequirements(root),config);
+  try {
+    // Only this fixed disposable database is ever cleared by the test.
+    for(const table of [...TABLES].reverse())await db.pool.query(`DROP TABLE IF EXISTS ${table}`);
+    await db.init({allowUnmigrated:true});
+    const backupDir=path.join(temp,'backup');backup(root,backupDir);
+    const report=await migrate(db,backupDir);assert.equal(report.importedVersions,2);assert.equal(report.identityRevisions,1);
+    assert.equal((await verify(db)).versions,3);
+    await assert.rejects(migrate(db,backupDir));
+    const current=(await db.read('design',entryPath)).workspace;assert.equal(current.revision,3);
+    const writes=await Promise.allSettled([db.save('design',entryPath,3,current.pages),db.save('design',entryPath,3,current.pages)]);
+    assert.equal(writes.filter(r=>r.status==='fulfilled').length,1);assert.equal(writes.find(r=>r.status==='rejected').reason.status,409);
+    const rules=await db.rules(entryPath), rule=rules.rules[0], element=resolveElement(current.pages[0].html,'#submit');
+    const target={type:'page-element',pageId:'page-one',route:'#ready',anchor:{elementId:element.id,selector:`[data-wb-element="${element.id}"]`,tag:'button',label:'提交',htmlHash:'12345678',strength:'stable',contextHash:''}};
+    const ref={file:rule.file,blockId:rule.blockId,quote:rule.quote,heading:rule.heading};
+    let notes=await db.save('annotations',entryPath,0,[{id:'note-one',target,text:'提交前检查',requirements:[ref]}]);
+    fs.writeFileSync(path.join(dir,'需求文档.md'),fs.readFileSync(path.join(dir,'需求文档.md'),'utf8').replace('有效订单可以提交','有效订单经确认后提交'));
+    const newRule=(await db.rules(entryPath)).rules[0];assert.equal(newRule.blockId,rule.blockId);assert.notEqual(newRule.quote,rule.quote);
+    const after=(await db.read('design',entryPath)).workspace;
+    const changed=await db.save('design',entryPath,after.revision,after.pages.map(p=>({...p,html:p.html.replace('提交','确认提交')})));
+    assert.equal(resolveElement(changed.pages[0].html,'#submit').id,element.id);
+    notes=await db.save('annotations',entryPath,notes.revision,notes.notes.map(n=>({...n,text:'已更新备注'})));
+    assert.deepEqual(notes.notes[0].requirements[0],ref);
+    await assert.rejects(db.save('annotations',entryPath,notes.revision,[...notes.notes,{id:'new-note',target,text:'',requirements:[ref]}]),e=>e.status===409);
+    assert.equal((await db.read('annotations',entryPath)).workspace.revision,2);
+    const [[links]]=await db.pool.query('SELECT COUNT(*) AS n FROM wb_links');assert.equal(links.n,1);
+    const flow=(id,parent=null)=>({id,name:id,description:'',parent,nodes:[{id:'start',type:'start',label:'开始',x:0,y:0,pageId:'page-one'}],edges:[]});
+    await db.save('flow',entryPath,0,{applicability:'needed',reason:'',flows:[flow('a'),flow('b',{entryPath,flowId:'a',nodeId:'start'})],references:[]});
+    await assert.rejects(db.save('flow',entryPath,1,{applicability:'needed',reason:'',flows:[flow('a',{entryPath,flowId:'b'}),flow('b',{entryPath,flowId:'a'})],references:[]}),e=>e.status===409);
+    assert.equal((await db.read('flow',entryPath)).workspace.revision,1);
+    const restored=await db.store('design').restore(entryPath,changed.revision,1);assert.equal(restored.pages[0].name,'订单');assert.ok(restored.revision>changed.revision);
+    const exported=await exportData(db,path.join(temp,'export'));assert.ok(exported.versions>=8);
+    const modeFile=path.join(temp,'mode.json');const reverted=await rollback(db,path.join(temp,'rollback'),modeFile);assert.equal(reverted.mode,'files');
+    await assert.rejects(db.save('annotations',entryPath,notes.revision,notes.notes),e=>e.status===503);
+    const fileDesign=createDesignStore(root,p=>scanRequirements(root).modules.flatMap(m=>m.features).find(e=>e.path===p));
+    assert.deepEqual(fileDesign.read(entryPath).workspace,(await db.read('design',entryPath)).workspace);
+    const fileAnnotations=createAnnotationStore(root,p=>scanRequirements(root).modules.flatMap(m=>m.features).find(e=>e.path===p),{readDesign:p=>fileDesign.read(p),readFlows:()=>({flows:[]}),readRules:p=>readRequirementRules(root,scanRequirements(root),p)});
+    assert.deepEqual(fileAnnotations.read(entryPath).workspace,(await db.read('annotations',entryPath)).workspace);
+    assert.equal(readRequirementRules(root,scanRequirements(root),entryPath).rules[0].blockId,rule.blockId);
+    assert.equal((await verify(db)).verified,true);
+    console.log(JSON.stringify({evidence:temp,migration:report,rollback:reverted}));
+  } finally {await db.close();}
+});
