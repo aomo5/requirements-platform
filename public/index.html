@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>需求平台</title>
+  <link rel="stylesheet" href="/assets/workbench-tokens.css">
+  <link rel="stylesheet" href="/assets/workbench-base.css">
+  <link rel="stylesheet" href="/assets/styles.css">
+  <link rel="stylesheet" href="/assets/copy-controls.css"><link rel="stylesheet" href="/assets/accounts.css">
+  <link rel="stylesheet" href="/assets/gitee-sync.css">
+  <link rel="stylesheet" href="/assets/workbench-icons.css">
+  <link rel="stylesheet" href="/assets/workbench-controls.css">
+</head>
+<body>
+  <a class="skip-link" href="#docContent">跳到内容</a>
+  <div class="app-shell">
+    <main class="layout">
+      <aside class="sider" aria-label="需求导航">
+        <div class="sider-header">
+          <div class="sider-title-row">
+            <a class="workspace-brand" href="/" aria-label="需求平台首页"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg><span>需求平台</span></a>
+            <div class="sider-title-actions"><button id="giteeSettingsButton" type="button">设置</button>
+            </div>
+          </div>
+          <label class="search-control">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
+            <input id="searchInput" type="search" placeholder="搜索需求…" aria-label="搜索模块、需求或路径">
+            <kbd title="搜索快捷键">⌘ K</kbd>
+          </label>
+          <div class="sider-controls">
+            <span id="treeMeta" class="text-secondary">需求目录</span><button id="giteeBatchButton" class="button" type="button">批量同步</button>
+            <button id="createEntryButton" class="button" type="button" disabled>新增需求</button>
+          </div>
+        </div>
+        <nav id="treeContainer" class="requirement-menu" aria-label="需求目录"></nav>
+        <div id="archiveSyncStatus" class="text-secondary hidden" role="status"></div>
+        <div class="sider-footer">
+          <button id="toggleArchivedButton" class="archive-filter" type="button" aria-pressed="false" title="归档保存到数据库，不改变 Gitee 状态"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v12H4zM3 4h18v4H3zM9 12h6"/></svg><span id="archivedToggleLabel">已归档</span><span id="archivedCount" class="count-badge">0</span></button>
+        </div>
+      </aside>
+
+      <section class="content" aria-label="需求工作区">
+        <header class="requirement-context">
+          <div class="context-heading"><button id="toggleDesignNavigation" class="icon-button hidden" aria-label="显示需求目录" title="显示需求目录" aria-pressed="false"></button>
+            <span id="entryOwner"></span><span id="entryModule" class="context-module">需求平台</span><span class="context-separator" aria-hidden="true">/</span><h1><button id="entryTitle" class="copy-name" type="button" aria-label="复制需求名称" data-tooltip="复制需求名称" disabled>选择需求</button></h1>
+            <a id="entryGiteeLink" class="gitee-status hidden" href="#" target="_blank" rel="noreferrer"></a><span id="entryGiteeStatus" class="gitee-status"></span>
+          </div>
+        <div class="workspace-view-bar">
+          <nav id="flowNavigation" class="flow-navigation" aria-label="需求流程"></nav>
+          <div id="designModeSwitch" class="design-mode-switch hidden" aria-label="设计显示方式"><button type="button" data-design-mode="design">画布</button><button type="button" data-design-mode="preview">预览</button></div><button id="toggleOutlineButton" class="icon-button outline-toggle" type="button" aria-label="隐藏文档大纲" title="隐藏文档大纲" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 10h4m4 0h8M4 15h4m4 0h8M4 20h4m4 0h8"/></svg></button>
+        </div>
+          <div class="workspace-context-actions"><button id="copyAiButton" class="button" type="button" disabled>复制给 AI</button><span id="giteeSyncState" role="status"></span><button id="giteeSyncButton" class="button" type="button" disabled>同步 Gitee</button><span id="workspaceSaveState" class="workspace-save-state" role="status" aria-live="polite"></span><a id="openDesignLink" class="button" href="/design"><span>编辑设计</span></a></div>
+        </header>
+        <div id="workspaceNotice" class="workspace-notice hidden" role="alert"></div>
+        <section id="editorWorkspace" class="editor-workspace hidden" aria-label="设计编辑工作区"><div id="editorFrames" class="editor-frames"></div></section>
+        <section id="testWorkspace" class="hidden" aria-label="测试"></section>
+        <section id="docWorkspace" class="doc-workspace">
+          <aside class="toc-panel" aria-label="文档大纲">
+            <div class="section-title"><h2>文档大纲</h2><p id="docStatus" class="text-secondary"></p></div>
+            <div id="docOutline" class="doc-outline empty-state">选择文档后查看大纲。</div>
+          </aside>
+          <article class="doc-panel">
+            <div class="doc-panel-header">
+              <div class="doc-heading"><p id="docEyebrow" class="text-secondary">需求文档</p><h2 id="docTitle">文档内容</h2></div>
+              <select id="documentSelect" class="document-select" aria-label="选择需求文档" disabled><option value="">暂无文档</option></select>
+              <button id="newPageDocumentButton" class="button" hidden type="button">新增页面说明</button>
+              <button id="editDocumentButton" class="button" hidden type="button">编辑</button><button id="documentHistoryButton" class="button" hidden type="button">历史</button>
+              <a id="downloadDocLink" class="icon-button disabled" href="#" download aria-label="下载当前文档" title="下载当前文档" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg></a>
+            </div>
+            <div class="document-stage"><div id="docContent" class="markdown-body empty-state" tabindex="-1" aria-live="polite">请选择左侧需求。</div></div>
+          </article>
+          <aside id="requirementLinksPanel" class="rule-link-panel" aria-label="需求关联元素" hidden></aside>
+        </section>
+        <section id="flowWorkspace" class="flow-workspace hidden" aria-label="需求流程图">
+          <aside class="flow-list-panel">
+            <div class="section-title"><h2>流程图 <span class="optional-label">可选</span></h2><p id="flowSummary" class="text-secondary"></p></div>
+            <div id="flowList" class="prototype-list"></div>
+            <div class="flow-list-actions"><a id="newFlowLink" class="button" href="/flow?action=new">新建流程</a><a id="linkFlowLink" class="button" href="/flow?action=link">关联已有</a></div>
+          </aside>
+          <section class="flow-panel">
+            <div class="flow-toolbar"><div class="flow-heading"><strong id="flowTitle">流程图</strong><span id="flowSourceLabel" class="text-secondary"></span></div><div class="preview-actions"><a id="openSourceFlowLink" class="button hidden" href="/flow">在来源中打开</a><a id="openFlowLink" class="button" href="/flow">流程工作台</a></div></div>
+            <div id="flowApplicability" class="flow-applicability hidden"></div>
+            <div id="flowCatalogNotice" class="flow-catalog-notice hidden"></div>
+            <div id="flowStage" class="flow-stage" tabindex="-1"><div id="flowEmpty" class="preview-empty empty-state" aria-live="polite"></div><iframe id="flowFrame" class="flow-frame hidden" title="流程图只读预览" referrerpolicy="same-origin"></iframe></div>
+          </section>
+        </section>
+        <section id="previewWorkspace" class="preview-workspace hidden" aria-label="设计预览">
+          <aside class="preview-list-panel">
+            <div class="section-title"><h2>设计与原型</h2><p id="designSummary" class="text-secondary"></p></div>
+            <div id="prototypeList" class="prototype-list"></div>
+          </aside>
+          <section class="preview-panel">
+            <div class="preview-toolbar"><span id="previewLabel" class="text-secondary">选择页面预览</span><div class="preview-actions"><a id="annotationPreviewLink" class="button hidden" href="/design">元素关联</a><a id="editPreviewLink" class="button hidden" href="/design">编辑此页面</a><a id="openPreviewLink" class="icon-button disabled" href="#" target="_blank" rel="noreferrer" aria-label="新窗口打开预览" title="新窗口打开" aria-disabled="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h7v7m0-7L10 14M10 4H4v16h16v-6"/></svg></a></div></div>
+            <div id="previewStage" class="preview-stage" tabindex="-1"><div id="previewEmpty" class="preview-empty empty-state" aria-live="polite">选择一个页面后在这里预览。</div><iframe id="previewFrame" class="preview-frame hidden" sandbox="allow-scripts allow-forms" title="页面交互预览" referrerpolicy="no-referrer"></iframe><img id="previewImage" class="preview-image hidden" alt="设计稿预览"></div>
+          </section>
+        </section>
+      </section>
+    </main>
+  </div>
+  <script type="module" src="/assets/app.js"></script>
+</body>
+</html>

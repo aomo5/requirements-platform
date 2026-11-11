@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>设计工作台 · 需求门户</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/assets/workbench-tokens.css">
+  <link rel="stylesheet" href="/assets/workbench-base.css">
+  <link rel="stylesheet" href="/assets/design.css">
+  <link rel="stylesheet" href="/assets/page-annotations.css">
+  <link rel="stylesheet" href="/assets/workbench-icons.css">
+  <link rel="stylesheet" href="/assets/workbench-controls.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" id="portalLink">需求门户 <span>/</span> <strong>设计工作台</strong></a>
+    <h1 id="featureTitle">选择一个需求，开始设计</h1>
+    <div class="top-actions">
+      <a id="returnFlowContext" class="text-button" hidden>返回流程节点</a>
+      <span id="saveState" role="status">正在加载</span>
+      <button id="undoButton" class="icon-button" aria-label="撤销" title="撤销 · ⌘/Ctrl Z" disabled><svg viewBox="0 0 24 24"><path d="m9 5-5 5 5 5M4 10h9a6 6 0 0 1 0 12"/></svg></button>
+      <button id="redoButton" class="icon-button" aria-label="重做" title="重做 · ⌘/Ctrl Shift Z" disabled><svg viewBox="0 0 24 24"><path d="m15 5 5 5-5 5m5-5h-9a6 6 0 0 0 0 12"/></svg></button>
+      <button id="annotationsButton" disabled>元素关联</button>
+      <button id="versionsButton" disabled>版本</button>
+      <button id="saveButton" disabled>立即保存</button>
+    </div>
+  </header>
+  <main class="workbench">
+    <aside class="left-panel">
+      <section class="requirement-select">
+        <label for="requirementSelect">关联需求</label>
+        <select id="requirementSelect" aria-label="关联需求"><option value="">加载中…</option></select>
+        <a id="requirementLink" href="/">查看需求</a>
+      </section>
+      <nav class="context-links" aria-label="需求流程"><a id="specLink" href="/">规格</a><a id="flowLink" href="/">流程</a><a id="pageDesignLink" href="/">页面</a><span class="current" aria-current="page">设计</span><a id="contractLink" href="/">接口</a></nav>
+      <section id="statesContext" class="states-context" hidden>
+        <button id="collapseStatesButton" class="state-disclosure" type="button" aria-expanded="false" aria-controls="pageList canvas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5"/></svg><span id="expandedPageName"></span><span id="pageStateCount"></span></button>
+      </section>
+      <div class="list-heading"><h2 id="pageListTitle">页面</h2><div class="page-list-actions"><button id="treeCollapseButton" class="icon-button" aria-label="折叠或展开全部分组" title="折叠或展开全部分组">≡</button><button id="importButton" class="icon-button" aria-label="导入已有原型" title="导入已有原型" aria-controls="prototypePicker" aria-expanded="false" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 16v5h16v-5"/></svg></button><button id="addButton" aria-label="新增页面" title="新增页面" disabled>新建</button></div></div>
+      <div id="prototypePicker" popover aria-label="已有原型"></div>
+      <div class="page-search"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg><input id="pageSearch" type="search" aria-label="查找页面" placeholder="查找页面"><kbd>⌘ K</kbd></div>
+      <nav id="pageList" aria-label="页面列表"></nav>
+      <footer><div class="footer-primary-actions"><button id="mobilePreviewButton" type="button" disabled>页面预览</button><button id="exportSelectionButton" type="button" disabled>导出</button></div><div id="historyActions"></div><span id="storageHint">自动保存</span><button id="shortcutsButton" class="icon-button" title="快捷键" aria-label="快捷键">?</button></footer>
+    </aside>
+    <div id="leftResize" class="panel-resize left" role="separator" tabindex="0" aria-label="页面列表宽度" aria-orientation="vertical" aria-valuemin="180" aria-valuemax="420" aria-valuenow="240"></div><div id="rightResize" class="panel-resize right" role="separator" tabindex="0" aria-label="属性面板宽度" aria-orientation="vertical" aria-valuemin="180" aria-valuemax="420" aria-valuenow="240"></div>
+    <section id="viewport" aria-label="设计画布" tabindex="0">
+      <div class="canvas-tools" role="toolbar" aria-label="画布工具">
+        <button id="selectTool" class="active" aria-pressed="true"><svg viewBox="0 0 24 24"><path d="m5 3 14 10-7 1-3 7Z"/></svg>选择</button>
+        <button id="panTool" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M8 12V6a2 2 0 0 1 4 0v5-6a2 2 0 0 1 4 0v7-4a2 2 0 0 1 4 0v7c0 4-3 6-7 6-3 0-4-2-6-4l-3-4c-1-2 1-3 2-2l2 1Z"/></svg>拖动画布</button>
+        <span class="tool-divider" aria-hidden="true"></span>
+        <button id="arrangeButton" disabled><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><rect x="14" y="14" width="6" height="6"/></svg>自动排布</button>
+        <button id="fitButton"><svg viewBox="0 0 24 24"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/></svg>适应画布</button>
+      </div>
+      <div class="canvas-navigation"><button id="panelToggle" class="icon-button" aria-label="隐藏面板" title="隐藏面板 · Tab" aria-pressed="false">◫</button><button id="fitSelectionButton" title="定位选中 · Shift 2">选中</button><button id="fitGroupButton">分组</button></div><div id="elementEditBar" class="element-edit-bar" hidden><span id="elementEditName"></span><button id="finishElementEdit" type="button">完成编辑</button></div><div id="canvas"></div><div id="snapGuides" aria-hidden="true"></div><div id="marquee" hidden aria-hidden="true"></div>
+      <div id="emptyCanvas" class="empty-canvas"><h2>把页面放在一起看</h2><p>从现有原型开始，或新建一个页面。</p><button class="primary" id="emptyAdd" disabled>新建页面</button></div>
+      <div class="zoom-controls"><select id="viewPreset" aria-label="定位和缩放"><option value="">视图</option><option value="all">适应全部</option><option value="selection">适应选中</option><option value="group">适应分组</option><option value="1">100%</option><option value=".5">50%</option><option value=".25">25%</option></select><button id="zoomOut" aria-label="缩小">−</button><button id="zoomLabel" title="还原到 100%">70%</button><button id="zoomIn" aria-label="放大">+</button></div>
+    </section>
+    <aside class="right-panel">
+      <div class="inspector-tabs"><span class="active">设计</span><button id="reviewLinkButton" class="text-button" disabled>复制评审链接</button></div>
+      <h2 id="inspectorTitle">页面设置</h2>
+      <p id="stateTrigger" class="state-trigger" hidden></p>
+      <div class="page-primary-actions">
+        <button id="elementEditButton" class="primary full" type="button" disabled>编辑元素</button>
+        <button id="previewButton" class="full" type="button" disabled>页面预览</button>
+        <div id="pageContextActions"></div>
+        <button id="expandButton" class="full" type="button" hidden>展开页面状态</button>
+      </div>
+      <section id="pageChangeSettings" hidden><label for="pageChangeSummary">本次页面改动</label><textarea id="pageChangeSummary" rows="7" maxlength="4000" placeholder="记录沿用的功能与本次新增、调整的内容" readonly></textarea></section>
+      <section id="elementInspector" hidden>
+        <nav id="elementBreadcrumb" aria-label="元素层级"></nav>
+        <p id="elementEmpty" class="element-empty">点击页面中的元素</p>
+        <form id="elementProperties" hidden>
+          <div class="element-heading"><div><div class="element-meta"><span id="elementKind"></span><span id="elementSize"></span></div><strong id="elementName"></strong></div><button id="elementLocate" type="button" aria-label="定位选中元素"></button></div>
+          <div id="elementTexts"></div><p id="elementTextUnavailable" class="element-empty" hidden>此文字由页面脚本生成，无法直接修改。</p>
+          <details open><summary>文字样式</summary><div id="elementTypography" class="element-fields"></div></details>
+          <details open><summary>外观</summary><div id="elementAppearance" class="element-fields"></div></details>
+          <details><summary>尺寸与间距</summary><div id="elementSpacing" class="element-fields"></div></details>
+          <p id="elementError" role="alert" hidden></p>
+        </form>
+      </section>
+      <div id="organizationSettings"><label for="pagePlatform">使用端</label><input id="pagePlatform" maxlength="100" list="platformOptions" disabled><datalist id="platformOptions"><option value="Web 后台"><option value="运营端"><option value="移动端"></datalist><label for="pageGroup">页面分组</label><input id="pageGroup" maxlength="100" list="groupOptions" disabled><datalist id="groupOptions"></datalist></div>
+      <div id="multiSettings" hidden><p id="selectionSummary"></p><div class="alignment-controls" role="group" aria-label="对齐选中画板"><button data-organize="left">左对齐</button><button data-organize="centerX">水平居中</button><button data-organize="right">右对齐</button><button data-organize="top">顶部对齐</button><button data-organize="centerY">垂直居中</button><button data-organize="bottom">底部对齐</button><button data-organize="distributeX">水平等距</button><button data-organize="distributeY">垂直等距</button><button data-organize="tidy">整理选中</button></div><div class="multi-actions"><button id="multiDuplicate">复制选中</button><button id="multiDelete" class="danger">删除选中</button></div></div>
+      <form id="pageSettings">
+        <label for="pageName">页面名称</label><input id="pageName" maxlength="100" disabled>
+        <div class="dimension-fields position-fields"><div><label for="pageX">X</label><input id="pageX" type="number" min="-100000" max="100000" step="1" disabled></div><div><label for="pageY">Y</label><input id="pageY" type="number" min="-100000" max="100000" step="1" disabled></div></div>
+        <div class="dimension-fields"><div><label for="pageWidth">宽度</label><input id="pageWidth" type="number" min="240" max="2560" step="1" disabled></div><div><label for="pageHeight">高度</label><input id="pageHeight" type="number" min="200" max="6000" step="1" disabled></div></div>
+        <label for="pagePreset">预设尺寸</label><select id="pagePreset" disabled><option value="390,844">小程序 · 390 × 844</option><option value="1440,900">Web · 1440 × 900</option><option value="768,1024">平板 · 768 × 1024</option><option value="custom">自定义</option></select>
+        <details class="page-source"><summary>页面源码</summary><label for="pageRoute">预览路由（可选）</label><input id="pageRoute" placeholder="#web/groups?scenario=normal" maxlength="500" disabled>
+        <button id="editButton" class="full" type="button" disabled>编辑 HTML</button></details>
+        <div class="page-secondary-actions" role="group" aria-label="页面操作"><button id="mergePageButton" class="full" type="button">合并到其他页面</button><button id="duplicateButton" class="full" type="button" disabled>复制页面 <kbd>⌘ D</kbd></button><button id="exportPageButton" class="full" type="button" disabled>导出页面 HTML</button><button id="deleteButton" class="danger full" type="button" disabled>删除页面</button></div>
+      </form>
+      <p id="inspectorHint" class="inspector-hint" hidden></p>
+    </aside>
+  </main>
+  <dialog id="designExportDialog" aria-labelledby="designExportTitle">
+    <div class="dialog-heading"><h2 id="designExportTitle">导出画板</h2><button id="designExportClose" class="icon-button" data-close="designExportDialog" aria-label="关闭导出"></button></div>
+    <form id="designExportForm">
+      <label for="designExportScope">范围</label><select id="designExportScope"><option value="selected">选中画板</option><option value="all">当前画布全部</option></select>
+      <div class="export-options-grid"><div><label for="designExportFormat">格式</label><select id="designExportFormat"><option value="png">PNG</option><option value="jpg">JPG</option><option value="pdf">PDF</option><option value="html">HTML</option></select></div>
+      <div id="designExportScaleField"><label for="designExportScale">倍率</label><select id="designExportScale"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option></select></div></div>
+      <label id="designExportTransparentField" class="export-checkbox"><input id="designExportTransparent" type="checkbox">透明背景</label>
+      <p id="designExportSummary" class="muted" role="status"></p><p id="designExportError" class="export-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button id="designExportCancel" type="button">取消</button><button id="designExportSubmit" type="submit" class="primary">导出</button></div>
+    </form>
+  </dialog>
+  <dialog id="editorDialog" class="wide-dialog" aria-labelledby="editorDialogTitle">
+    <div class="dialog-heading"><h2 id="editorDialogTitle">编辑 HTML</h2><button class="icon-button" data-close="editorDialog" aria-label="关闭编辑器"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <p class="muted">完整 HTML 或页面片段会自动应用并保存。<span id="editorSaveState" role="status"></span></p>
+    <div class="editor-grid"><textarea id="htmlEditor" spellcheck="false" aria-label="页面 HTML 代码"></textarea><iframe id="editorPreview" title="HTML 编辑预览" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe></div>
+    <div class="dialog-actions"><button id="exportButton">导出 HTML</button><button id="refreshEditor">刷新预览</button><button id="applyHtml" class="primary">完成</button></div>
+  </dialog>
+  <dialog id="previewDialog" class="preview-dialog" aria-labelledby="previewTitle">
+    <div class="dialog-heading"><h2 id="previewTitle">页面预览</h2><div class="preview-tools"><div class="preview-tool-group"><button id="previewCompare" aria-pressed="false" hidden>并排对比</button></div><div class="preview-tool-group preview-scale-group" role="group" aria-label="预览缩放"><button id="previewFit" aria-pressed="true">适应窗口</button><button id="previewActual" aria-pressed="false">100%</button></div><div class="preview-tool-group" role="group" aria-label="切换页面"><button id="previousPage">上一页</button><button id="nextPage">下一页</button></div><div class="preview-tool-group"><button id="previewAnnotationsButton">说明</button><button id="returnCanvasButton" data-close="previewDialog">返回画布</button></div></div></div>
+    <div class="preview-scroll" id="previewScroll"><div id="previewCompareGrid" hidden></div><div id="previewSurface"><iframe id="fullPreview" title="页面原尺寸预览" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe></div></div>
+  </dialog>
+  <dialog id="versionsDialog" aria-labelledby="versionsDialogTitle"><div class="dialog-heading"><h2 id="versionsDialogTitle">保存版本</h2><button class="icon-button" data-close="versionsDialog" aria-label="关闭版本列表"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div><p class="muted">恢复会生成一个新版本，当前版本仍然保留。</p><div id="versionsList"></div></dialog>
+  <dialog id="shortcutsDialog" aria-labelledby="shortcutsDialogTitle"><div class="dialog-heading"><h2 id="shortcutsDialogTitle">快捷键</h2><button class="icon-button" data-close="shortcutsDialog" aria-label="关闭快捷键"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div><dl class="shortcut-list"><div><dt>编辑文字</dt><dd>编辑元素后双击文字 / Enter</dd></div><div><dt>选择外层容器</dt><dd>元素层级 / ↑</dd></div><div><dt>完成 / 取消文字输入</dt><dd>Enter / Esc（Shift Enter 换行）</dd></div><div><dt>多选 / 框选</dt><dd>Shift 点击 / 空白处拖动</dd></div><div><dt>隐藏 / 显示面板</dt><dd>画布中 Tab</dd></div><div><dt>移动时暂时关闭吸附</dt><dd>Alt</dd></div><div><dt>移动画板</dt><dd>拖动画板标题</dd></div><div><dt>重命名页面</dt><dd>双击列表名称 / F2</dd></div><div><dt>展开页面状态</dt><dd>画板标题旁的展开图标</dd></div><div><dt>选择 / 拖动画布</dt><dd>V / H</dd></div><div><dt>临时拖动画布</dt><dd>按住空格</dd></div><div><dt>适应全部 / 定位选中页</dt><dd>Shift 1 / 2</dd></div><div><dt>撤销 / 重做</dt><dd>⌘/Ctrl Z / Shift Z</dd></div><div><dt>复制 / 保存</dt><dd>⌘/Ctrl D / S</dd></div><div><dt>查找页面</dt><dd>⌘/Ctrl K</dd></div><div><dt>移动页面 / 快速移动</dt><dd>方向键 / Shift 方向键</dd></div><div><dt>预览选中页</dt><dd>Enter</dd></div><div><dt>放大 / 缩小</dt><dd>+ / −</dd></div></dl></dialog>
+  <dialog id="reviewLinkDialog" aria-labelledby="reviewLinkDialogTitle"><div class="dialog-heading"><h2 id="reviewLinkDialogTitle">评审链接</h2><button class="icon-button" data-close="reviewLinkDialog" aria-label="关闭评审链接"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div><label for="reviewLinkInput">复制链接，与同网团队成员共享当前已保存页面</label><input id="reviewLinkInput" readonly><p class="muted">从局域网地址打开工作台后复制，团队成员才能访问。</p></dialog>
+  <dialog id="conflictDialog" aria-labelledby="conflictDialogTitle">
+    <div class="dialog-heading"><h2 id="conflictDialogTitle">处理保存冲突</h2><button class="icon-button" data-close="conflictDialog" aria-label="关闭"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+    <p id="conflictMessage" role="status"></p><p class="muted">自动保存已暂停，本机草稿仍保留。读取已保存版本会替换当前草稿，可先下载留存。</p>
+    <div class="dialog-actions"><button id="downloadDraft">下载草稿</button><button id="retryConflict">重试核对</button><button id="reloadDesign" class="primary">读取已保存版本</button></div>
+  </dialog>
+  <dialog id="designConfirmDialog" aria-labelledby="designConfirmTitle">
+    <div class="dialog-heading"><h2 id="designConfirmTitle"></h2></div><p id="designConfirmMessage"></p>
+    <div class="dialog-actions"><button id="designConfirmCancel" autofocus>取消</button><button id="designConfirmAccept" class="primary"></button></div>
+  </dialog>
+  <div id="toast" role="status" hidden></div>
+  <script type="module" src="/assets/design.js"></script>
+</body>
+</html>
