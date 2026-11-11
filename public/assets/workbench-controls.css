@@ -1,0 +1,217 @@
+/* Editor chrome only. Business-page iframes retain their own styles. */
+body :is(.canvas-navigation,.zoom-controls,.canvas-tools,.preview-toolbar,.flow-toolbar,.doc-panel-header,.top-actions,.right-panel,dialog) button:not(.wb-icon-button) {
+  font-size:var(--wb-font-tool);line-height:var(--wb-line-tool);
+  transition:background-color var(--wb-motion-fast),border-color var(--wb-motion-fast),color var(--wb-motion-fast);
+}
+body :is(.canvas-navigation,.zoom-controls,.preview-toolbar,.flow-toolbar,.doc-panel-header,.top-actions,.right-panel,dialog) button:not(.wb-icon-button):not(.text-button) {
+  min-height:var(--wb-control-height);padding:5px 12px;border-radius:var(--wb-radius-control);
+}
+body :is(.canvas-navigation,.zoom-controls,.preview-toolbar,.flow-toolbar,.doc-panel-header,.top-actions,.right-panel,dialog) button:not(.wb-icon-button):hover:not(:disabled) {background:var(--wb-bg-hover)}
+body :is(.canvas-navigation,.zoom-controls,.preview-toolbar,.flow-toolbar,.doc-panel-header,.top-actions,.right-panel,dialog) button:not(.wb-icon-button):active:not(:disabled) {background:var(--wb-bg-pressed)}
+body :is(.right-panel,dialog,.top-actions) button.primary:hover:not(:disabled) {background:var(--wb-action-hover);border-color:var(--wb-action-hover);color:var(--wb-text-on-accent)}
+body :is(.right-panel,dialog,.top-actions) button.primary:active:not(:disabled) {background:var(--wb-action-pressed);border-color:var(--wb-action-pressed)}
+body :is(.right-panel,dialog) button.danger:hover:not(:disabled) {background:var(--wb-danger-subtle);color:var(--wb-danger)}
+body :is(.right-panel,dialog,.top-actions) button:disabled {color:var(--wb-text-disabled);opacity:1;cursor:not-allowed}
+body :is(.right-panel,dialog,.top-actions) button.primary:disabled {background:var(--wb-bg-disabled);border-color:var(--wb-border);color:var(--wb-text-disabled)}
+body :is(.canvas-navigation,.zoom-controls,.right-panel,dialog) :is(button,a,summary):focus-visible {outline:var(--wb-focus-width) solid var(--wb-border-focus);outline-offset:var(--wb-focus-offset)}
+
+/* Selected tools stay selected on hover; pressing remains a separate state. */
+.wb-icon-button:is([aria-pressed=true],[aria-selected=true],[aria-expanded=true],.active):active:not(:disabled) {--wb-icon-background:var(--wb-bg-pressed)}
+.canvas-tools .wb-icon-button:is([aria-pressed=true],.active):hover {--wb-icon-background:var(--wb-action-hover)}
+.canvas-tools .wb-icon-button:active:not(:disabled) {--wb-icon-background:var(--wb-neutral-800)}
+.canvas-tools .wb-icon-button:is([aria-pressed=true],.active):active:not(:disabled) {--wb-icon-background:var(--wb-action-pressed)}
+.canvas-tools .tool-divider {align-self:stretch;flex:none;width:1px;margin:8px 4px;background:var(--wb-neutral-600)}
+.element-mode .canvas-tools .tool-divider {display:none}
+body .canvas-navigation,body .zoom-controls {padding:4px;gap:0;border-radius:var(--wb-radius-group);box-shadow:0 2px 8px #0000000a}
+body .zoom-controls {width:max-content;max-width:calc(100% - 32px)}
+body .canvas-navigation button:not(.wb-icon-button),body .zoom-controls button:not(.wb-icon-button) {height:32px;min-height:32px;padding:5px 10px}
+.canvas-navigation #panelToggle {margin-right:4px}
+body .zoom-controls select {width:auto;max-width:120px;height:32px;padding:5px 24px 5px 8px;border:1px solid transparent;background-color:transparent;font-size:12px}
+body .zoom-controls select:hover {background-color:var(--wb-bg-hover)}
+body .zoom-controls #zoomLabel {min-width:58px;font-variant-numeric:tabular-nums}
+
+/* Inspectors use one field and section rhythm across page, element and flow. */
+body .right-panel {padding:0 16px 24px;scrollbar-gutter:stable;overscroll-behavior:contain;scroll-padding-block:56px 16px}
+body .right-panel .inspector-tabs {position:sticky;top:0;z-index:2;min-height:44px;height:44px;margin:0 -16px;padding:0 16px;gap:8px;background:var(--wb-bg-surface)}
+body .right-panel .inspector-tabs .active {height:44px;margin:0;display:flex;align-items:center}
+body .right-panel .inspector-tabs button {margin:0}
+body .right-panel h2 {margin:16px 0;font-size:13px;line-height:20px;font-weight:500}
+body .right-panel label,body #pageSettings label {margin:12px 0 4px;color:var(--wb-text-secondary);font-size:12px;line-height:20px;font-weight:400}
+body :is(.right-panel,#pageSettings,#elementInspector) :is(input,select,textarea):where(:not([type=checkbox]):not([type=radio])) {
+  box-sizing:border-box;width:100%;min-width:0;margin:0;padding:5px 8px;
+  border:1px solid transparent;border-radius:var(--wb-radius-control);
+  background:var(--wb-bg-subtle);color:var(--wb-text-primary);font:400 12px/20px var(--wb-font-family);
+  transition:border-color var(--wb-motion-fast),background-color var(--wb-motion-fast);
+}
+body :is(.right-panel,#pageSettings,#elementInspector) :is(input,select) {height:32px;font-variant-numeric:tabular-nums}
+body :is(.right-panel,#pageSettings,#elementInspector) textarea {display:block;min-height:64px;resize:vertical}
+body :is(.right-panel,#pageSettings,#elementInspector) :is(input,select,textarea):hover:not(:focus):not(:disabled):not([readonly]) {border-color:var(--wb-border-control)}
+body :is(.right-panel,#pageSettings,#elementInspector) :is(input,select,textarea):focus {outline:2px solid var(--wb-border-focus);outline-offset:-1px;border-color:transparent;background:var(--wb-bg-surface)}
+body :is(.right-panel,#pageSettings,#elementInspector) :is(input,select,textarea)[aria-invalid=true] {border-color:var(--wb-danger);outline-color:var(--wb-danger)}
+body :is(.right-panel,#pageSettings,#elementInspector) :is(input,select,textarea):disabled {color:var(--wb-text-disabled);border-color:transparent;cursor:not-allowed}
+body .right-panel [readonly] {cursor:text}
+body .right-panel .dimension-fields {gap:8px}
+body .page-primary-actions {gap:8px;margin:0 0 16px}
+body .page-primary-actions :is(button,#pageContextActions button) {min-height:32px;margin:0;padding:5px 8px}
+body #organizationSettings {padding:0 0 16px;margin:0 0 16px}
+body #organizationSettings>label:first-child,body #pageSettings>label:first-child {margin-top:0}
+body .right-panel .page-secondary-actions {margin-top:16px;padding-top:16px;gap:8px}
+body .right-panel .text-button:not(.wb-icon-button) {min-height:32px;padding:5px 8px;border-radius:6px}
+body #elementBreadcrumb {min-height:36px;margin:0 -4px 12px;padding:2px 4px}
+body #elementBreadcrumb button {padding:5px 6px;flex-shrink:0}
+body #elementBreadcrumb button[aria-current=true] {background:var(--wb-accent-subtle);color:var(--wb-text-link)}
+body #elementBreadcrumb button:focus-visible {outline-offset:-2px}
+body #elementInspector label {margin:0 0 4px}
+body #elementInspector textarea {margin-bottom:12px}
+body #elementInspector details {margin-top:16px;padding:0}
+body #elementInspector details:not([open])+details {margin-top:0}
+body :is(.right-panel,#elementInspector) details>summary {
+  position:relative;display:flex;align-items:center;min-height:36px;margin:0 -8px;padding:8px 32px 8px 8px;
+  border-radius:4px;list-style:none;cursor:pointer;font:500 12px/20px var(--wb-font-family);color:var(--wb-text-primary);
+}
+body :is(.right-panel,#elementInspector) details>summary::-webkit-details-marker {display:none}
+body :is(.right-panel,#elementInspector) details>summary::after {
+  content:"";position:absolute;right:8px;top:50%;width:16px;height:16px;background:var(--wb-text-secondary);
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m9 5 7 7-7 7' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/16px no-repeat;
+  transform:translateY(-50%);transition:transform var(--wb-motion-fast);pointer-events:none;
+}
+body :is(.right-panel,#elementInspector) details[open]>summary::after {transform:translateY(-50%) rotate(90deg)}
+body :is(.right-panel,#elementInspector) details>summary:hover {background:var(--wb-bg-hover)}
+body :is(.right-panel,#elementInspector) details>summary:active {background:var(--wb-bg-pressed)}
+body :is(.right-panel,#elementInspector) details>summary:focus-visible {outline-offset:-2px}
+body :is(.right-panel,#elementInspector) details[open]>summary {margin-bottom:8px}
+body .element-heading {margin-bottom:16px}
+body .element-heading strong {font-size:13px;line-height:20px}
+/* Reserve the reset slot before hover so values and native select arrows never jump. */
+body .element-value:has(.element-reset:not(:disabled)) input {padding-right:36px}
+body .element-value:has(.element-reset:not(:disabled)) select {padding-right:56px}
+body .element-value .element-reset.wb-icon-button {--wb-hit-size:32px;--wb-icon-background:var(--wb-bg-subtle);border-radius:0 6px 6px 0}
+body .element-value .element-reset.wb-icon-button:hover {--wb-icon-background:var(--wb-bg-pressed)}
+body .element-value .element-reset.wb-icon-button:focus-visible {outline-offset:-2px}
+
+/* Dialogs keep stable headers, aligned actions and scrollable content. */
+body dialog {max-width:calc(100vw - 32px);border-color:var(--wb-border);border-radius:var(--wb-radius-overlay);box-shadow:var(--wb-shadow-overlay);overscroll-behavior:contain;scroll-padding:16px;color:var(--wb-text-primary)}
+body dialog:not(.preview-dialog):not(.element-notes-dialog):not(.gitee-dialog) {padding:20px}
+body dialog::backdrop {background:#1a1a1a59}
+body dialog .dialog-heading {min-height:32px;height:auto;gap:16px;margin-bottom:16px}
+body dialog .dialog-heading h2 {min-width:0;margin:0;font:500 13px/20px var(--wb-font-family);overflow-wrap:anywhere}
+body dialog .dialog-heading>.wb-icon-button {flex-shrink:0;margin-right:-4px}
+body dialog label {font:400 12px/20px var(--wb-font-family);margin:12px 0 4px;color:var(--wb-text-secondary)}
+body dialog :is(input,select):not([type=checkbox]):not([type=radio]) {height:32px;border:1px solid var(--wb-border-control);border-radius:6px;padding:5px 8px;font:400 12px/20px var(--wb-font-family)}
+body dialog :is(input,select,textarea):hover:not(:focus):not(:disabled):not([readonly]) {border-color:var(--wb-text-secondary)}
+body dialog :is(input,select,textarea):focus {outline:2px solid var(--wb-border-focus);outline-offset:-1px}
+body dialog :is(input,select,textarea)[aria-invalid=true] {border-color:var(--wb-danger);outline-color:var(--wb-danger)}
+body dialog .dialog-actions {gap:8px;margin-top:24px;align-items:center;flex-wrap:wrap}
+body dialog .dialog-actions>button {min-width:64px}
+body dialog .muted {font-size:12px;line-height:20px}
+body :is(#shortcutsDialog,#helpDialog,#versionsDialog) .dialog-heading {position:sticky;top:-20px;z-index:1;padding:12px 0;margin-top:-12px;background:var(--wb-bg-surface);border-bottom:1px solid var(--wb-border)}
+body .shortcut-list>div {align-items:baseline;gap:16px;padding:10px 0}
+body .shortcut-list dt {flex:1;line-height:20px}
+body .shortcut-list dd {max-width:58%;line-height:20px;text-align:right;overflow-wrap:anywhere}
+body .version-row {gap:16px;padding:12px 0}
+body .version-row>span {min-width:0;overflow-wrap:anywhere}
+body .version-row button {flex-shrink:0}
+body .gitee-dialog header,body .gitee-dialog footer {padding:12px 16px;gap:8px}
+body .gitee-dialog header {min-height:56px}
+body .gitee-dialog input[readonly] {background:var(--wb-bg-subtle)}
+
+/* Preview tools wrap as groups, with the remaining height given to the page. */
+body .preview-dialog[open] {display:flex;flex-direction:column;padding:0;overflow:hidden}
+body .preview-dialog .dialog-heading {flex:none;min-height:56px;flex-wrap:wrap;padding:8px 16px;margin:0;gap:8px 16px}
+body .preview-dialog h2 {flex:1 1 180px;max-width:100%;white-space:nowrap}
+body .preview-dialog .preview-tools {display:flex;align-items:center;flex-wrap:wrap;flex-shrink:1;gap:8px;margin-left:auto;max-width:100%}
+body .preview-dialog .preview-tool-group {display:flex;align-items:center;flex:none;gap:4px}
+body .preview-dialog .preview-scale-group {padding:2px;border-radius:6px;background:var(--wb-bg-subtle);gap:2px}
+body .preview-scale-group button {border-color:transparent;background:transparent}
+body .preview-scale-group button[aria-pressed=true] {border-color:var(--wb-border);background:var(--wb-bg-surface);box-shadow:0 1px 2px #0000000a}
+body .preview-scale-group button[aria-pressed=true]:hover {background:var(--wb-bg-surface)}
+body .preview-scale-group button[aria-pressed=true]:active {background:var(--wb-bg-pressed)}
+body .preview-tool-group:has(>#previewCompare[hidden]) {display:none}
+body .preview-tool-group[aria-label="切换页面"],body .preview-tools>.preview-tool-group:last-child {padding-left:8px;border-left:1px solid var(--wb-border)}
+body .preview-tool-group #previewCompare[aria-pressed=true] {background:var(--wb-accent-subtle);border-color:var(--wb-accent-subtle);color:var(--wb-text-link)}
+body .preview-dialog .preview-scroll {flex:1;min-height:0;height:auto;padding:20px}
+body .element-notes-header {padding:8px 16px;gap:8px 16px}
+
+@media(max-width:760px) {
+  body :is(.canvas-navigation,.zoom-controls,.right-panel,dialog) button:not(.wb-icon-button):not(.text-button),body .right-panel .text-button:not(.wb-icon-button) {min-height:44px}
+  body .canvas-navigation button:not(.wb-icon-button),body .zoom-controls button:not(.wb-icon-button),body .zoom-controls select {height:44px}
+  body :is(.right-panel,#pageSettings,#elementInspector) :is(input,select),body dialog :is(input,select):not([type=checkbox]):not([type=radio]) {height:44px}
+  body :is(.right-panel,#elementInspector) details>summary {min-height:44px}
+  body .element-value .element-reset.wb-icon-button {--wb-hit-size:44px}
+  body .element-value:has(.element-reset:not(:disabled)) input {padding-right:44px}
+  body .element-value:has(.element-reset:not(:disabled)) select {padding-right:64px}
+  body .element-swatch {top:14px}
+  body dialog {max-width:calc(100vw - 16px)}
+  body .preview-dialog .dialog-heading {padding:8px 12px;gap:8px}
+  body .preview-dialog h2 {flex-basis:100%}
+  body .preview-dialog .preview-tools {margin-left:0;gap:8px;justify-content:flex-end;width:100%}
+  body .preview-dialog .preview-scroll {padding:12px}
+  body .shortcut-list>div {align-items:flex-start}
+}
+
+/* Flow tools and zoom share layout space instead of overlapping fixed offsets. */
+body .canvas-dock{position:absolute;z-index:5;left:16px;right:16px;bottom:16px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;pointer-events:none}
+body .canvas-dock .canvas-tools,body .canvas-dock .zoom-controls{position:static;inset:auto;transform:none;margin:0;max-width:100%;pointer-events:auto;flex:0 1 auto}
+body .canvas-dock .canvas-tools{width:max-content;flex-wrap:wrap;justify-content:flex-start;gap:4px;padding:4px}
+body .canvas-dock .canvas-tools button{flex-shrink:0}
+body .canvas-dock .zoom-controls{margin-left:auto;flex-shrink:0}
+body .canvas-dock .canvas-hint{position:static;flex-basis:100%;max-width:100%;text-align:right;line-height:18px}
+body .canvas-dock .canvas-hint:empty{display:none}
+@media(max-width:760px){body .canvas-dock{left:8px;right:8px;bottom:12px}}
+
+/* Requirement navigation uses the same row rhythm as the design page tree. */
+@media(min-width:721px){.layout,.layout.editor-active{grid-template-columns:240px minmax(0,1fr)}.layout.editor-active.design-focused{grid-template-columns:minmax(0,1fr)}}
+.sider .sider-header{padding:12px 12px 0}
+.sider .sider-title-row{height:32px;gap:8px}
+.sider .workspace-brand{font-size:12px}
+.sider .search-control{height:32px;margin-top:12px;gap:8px;padding:0 8px;border-radius:6px}
+.sider .search-control svg{width:16px;height:16px}
+.sider .search-control:hover{border-color:var(--wb-border-control)}
+.sider .search-control:focus-within{border-color:var(--wb-border-focus);box-shadow:inset 0 0 0 1px var(--wb-border-focus);background:var(--wb-bg-surface)}
+.sider .sider-controls{height:44px;gap:8px;padding:0}
+.sider .sider-controls #treeMeta{margin-right:auto;white-space:nowrap;font-variant-numeric:tabular-nums}
+.sider #giteeBatchButton{height:28px;min-height:28px;padding:3px 8px;font-size:11px}
+.sider .requirement-menu{padding:0 8px 8px;overscroll-behavior:contain;scrollbar-gutter:stable;scroll-padding-block:4px}
+.sider .menu-section+.menu-section{margin-top:4px}
+.sider .menu-section-title{height:32px;border-radius:0;padding:0 8px;font-size:12px;font-weight:400}
+.sider .menu-section-heading{gap:8px}
+.sider .menu-chevron{display:flex;align-items:center;justify-content:center;width:16px;height:16px;border:0;transform:none}
+.sider .menu-chevron svg{width:16px;height:16px;transform:rotate(90deg);transition:transform var(--wb-motion-fast)}
+.sider .menu-section.collapsed .menu-chevron svg{transform:rotate(0)}
+.sider .module-count{min-width:20px;text-align:right;font-variant-numeric:tabular-nums}
+.sider .menu-section-body{gap:0}
+.sider .menu-item-row{border-radius:0}
+.sider .menu-item{min-height:56px;padding:8px 36px 8px 32px;border-radius:0;background:transparent}
+.sider .menu-item strong{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:400 12px/20px var(--wb-font-family)}
+.sider .menu-item.active strong{font-weight:400}
+.sider .menu-item-meta{margin-top:2px;margin-right:-28px;gap:4px;line-height:16px}
+.sider .menu-item-meta>span:nth-child(2){flex:1;min-width:0}
+.sider .writing-state{margin-left:4px;width:16px;height:16px}
+.sider .menu-item-row:hover,.sider .menu-section-title:hover{background:var(--wb-bg-hover)}
+.sider .menu-item-row:has(button:active),.sider .menu-section-title:active{background:var(--wb-bg-pressed)}
+.sider .menu-item-row:has(.menu-item.active){background:var(--wb-accent-subtle)}
+.sider .menu-item:hover,.sider .menu-item.active{background:transparent}
+.sider .menu-section-title:focus-visible,.sider .menu-item-row:has(button:focus-visible){outline:2px solid var(--wb-border-focus);outline-offset:-2px}
+.sider .menu-item:focus-visible{outline:none}
+.sider .archive-button.wb-icon-button{top:4px;right:2px;width:32px;height:32px;min-width:32px;min-height:32px;opacity:1;visibility:hidden}
+.sider .menu-item-row:hover .archive-button,.sider .menu-item-row:focus-within .archive-button,.sider .menu-item-row.archived .archive-button{visibility:visible}
+.sider .archive-button.wb-icon-button:focus-visible{outline-offset:-2px}
+.sider .sider-footer{height:48px;padding:6px 12px;gap:8px}
+.sider .archive-filter{min-height:32px;padding:4px 6px;gap:8px;font-size:12px}
+.sider .archive-filter:hover{background:var(--wb-bg-hover);color:var(--wb-text-primary)}
+.sider .archive-filter[aria-pressed=true]{background:var(--wb-bg-selected);color:var(--wb-text-primary)}
+.sider .count-badge{font-variant-numeric:tabular-nums}
+@media(hover:none){.sider .archive-button.wb-icon-button{visibility:visible}}
+@media(max-width:720px){
+  .sider .sider-title-row{height:44px}
+  .sider .search-control{height:44px;margin-top:4px}
+  .sider .menu-section-title{height:44px}
+  .sider .archive-button.wb-icon-button{width:44px;height:44px;min-width:44px;min-height:44px;top:0}
+  .sider .menu-item{padding-right:48px;min-height:56px}
+  .sider .menu-item-meta{margin-right:-40px}
+  .editor-active .sider{max-height:224px}
+  .editor-active .requirement-menu{max-height:120px}
+  .editor-active .sider .menu-item{min-height:44px;padding-block:12px}
+  .sider .sider-footer{height:44px}
+}
+@media(prefers-reduced-motion:reduce){.sider .menu-chevron svg{transition:none}}

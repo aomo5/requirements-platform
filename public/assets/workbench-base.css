@@ -1,0 +1,49 @@
+/* Shared workbench foundations. Token values are generated from the design-system skill. */
+:root {
+  --accent: var(--wb-action-primary);
+  --accent-hover: var(--wb-action-hover);
+  --accent-soft: var(--wb-accent-subtle);
+  --text: var(--wb-text-primary);
+  --text-secondary: var(--wb-text-secondary);
+  --text-meta: var(--wb-text-secondary);
+  --text-disabled: var(--wb-text-disabled);
+  --muted: var(--wb-text-secondary);
+  --border: var(--wb-border);
+  --border-strong: var(--wb-border-control);
+  --surface: var(--wb-bg-surface);
+  --canvas: var(--wb-bg-canvas);
+  --dock: var(--wb-bg-inverse);
+  --danger: var(--wb-danger);
+  --font: var(--wb-font-family);
+  --workbench-ink: var(--wb-text-primary);
+  --workbench-secondary: var(--wb-text-secondary);
+  --workbench-muted: var(--wb-text-secondary);
+  --workbench-border: var(--wb-border);
+  --workbench-edge: var(--wb-border-control);
+  --workbench-nav: var(--wb-bg-surface);
+  --workbench-panel: var(--wb-bg-surface);
+  --workbench-canvas: var(--wb-bg-canvas);
+  --workbench-hover: var(--wb-bg-hover);
+  --workbench-accent: var(--wb-text-link);
+  --workbench-accent-hover: var(--wb-action-hover);
+  --workbench-selection: var(--wb-bg-selected);
+  --workbench-success: var(--wb-success);
+  --workbench-warning: var(--wb-warning);
+  --workbench-danger: var(--wb-danger);
+  --radius-control: var(--wb-radius-control);
+  --font-family: var(--wb-font-family);
+  --mono-family: var(--wb-font-mono);
+}
+body { font: var(--wb-weight-regular) var(--wb-font-tool)/var(--wb-line-tool) var(--wb-font-family); color: var(--wb-text-primary); }
+button,input,select,textarea { font: var(--wb-weight-regular) var(--wb-font-tool)/var(--wb-line-tool) var(--wb-font-family); }
+button,a,input,select,textarea { -webkit-tap-highlight-color:transparent; }
+button:active:not(:disabled),.button:active:not(.disabled) { background:var(--wb-bg-pressed); }
+button:disabled,input:disabled,select:disabled,textarea:disabled,[aria-disabled=true] { color:var(--wb-text-disabled); opacity:1; cursor:not-allowed; }
+input::placeholder,textarea::placeholder { color:var(--wb-text-secondary); opacity:1; }
+:where(button,a,input,select,textarea,summary,[tabindex]):focus-visible { outline:var(--wb-focus-width) solid var(--wb-border-focus); outline-offset:var(--wb-focus-offset); }
+button.primary:active:not(:disabled),a.button-primary:active:not(.disabled) { background:var(--wb-action-pressed); border-color:var(--wb-action-pressed); }
+button.primary:disabled,.button-primary[aria-disabled=true] { color:var(--wb-text-disabled); background:var(--wb-bg-disabled); border-color:var(--wb-border); }
+:where(label) { font-weight:var(--wb-weight-regular); }
+:where(dialog) { border-radius:var(--wb-radius-overlay); box-shadow:var(--wb-shadow-overlay); }
+:where(kbd) { font-family:inherit; font-weight:var(--wb-weight-regular); }
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { transition:none!important; animation:none!important; scroll-behavior:auto!important; } }

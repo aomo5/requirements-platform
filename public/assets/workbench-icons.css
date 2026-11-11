@@ -1,0 +1,81 @@
+/* Shared action controls. Geometry overrides legacy page-specific button rules. */
+.wb-icon-button{--wb-hit-size:var(--wb-control-height);display:inline-flex;flex:none;align-items:center;justify-content:center;gap:0;box-sizing:border-box;width:var(--wb-hit-size)!important;min-width:var(--wb-hit-size)!important;height:var(--wb-hit-size)!important;min-height:var(--wb-hit-size)!important;padding:0!important;border:1px solid transparent!important;border-radius:var(--wb-radius-control);vertical-align:middle;text-decoration:none!important;font-weight:400;box-shadow:none!important;transition:background-color var(--wb-motion-fast),color var(--wb-motion-fast)}
+.wb-icon-button svg,.wb-status-icon svg{display:block!important;flex:none;width:var(--wb-icon-size)!important;height:var(--wb-icon-size)!important;fill:none;stroke:currentColor;stroke-width:var(--wb-icon-stroke);stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+.wb-status-icon{display:inline-flex;flex:none;align-items:center;justify-content:center;width:var(--wb-icon-size);height:var(--wb-icon-size);color:var(--wb-text-secondary);vertical-align:middle}
+.wb-icon-button{color:var(--wb-icon-color,var(--wb-text-secondary))!important;background:var(--wb-icon-background,transparent)!important}
+.wb-icon-button:hover{--wb-icon-color:var(--wb-text-primary);--wb-icon-background:var(--wb-bg-hover)}
+.wb-icon-button:active{--wb-icon-background:var(--wb-bg-pressed)}
+.wb-icon-button:is([aria-pressed=true],[aria-selected=true],[aria-expanded=true],.active){--wb-icon-color:var(--wb-text-primary);--wb-icon-background:var(--wb-bg-selected)}
+.wb-icon-button:is([aria-pressed=true],[aria-selected=true],[aria-expanded=true],.active):hover{--wb-icon-background:var(--wb-bg-pressed)}
+.wb-icon-button.primary{--wb-icon-color:var(--wb-text-on-accent);--wb-icon-background:var(--wb-action-primary)}
+.wb-icon-button.primary:hover{--wb-icon-background:var(--wb-action-hover)}
+.wb-icon-button.primary:active{--wb-icon-background:var(--wb-action-pressed)}
+.wb-icon-button.danger{--wb-icon-color:var(--wb-danger)}
+.wb-icon-button.danger:hover{--wb-icon-background:var(--wb-danger-subtle)}
+.wb-icon-button:is(:disabled,[aria-disabled=true],.disabled){--wb-icon-color:var(--wb-text-disabled);--wb-icon-background:transparent;opacity:1;cursor:not-allowed}
+.wb-icon-button.primary:is(:disabled,[aria-disabled=true],.disabled){--wb-icon-background:var(--wb-bg-disabled)}
+.wb-icon-button:focus-visible{outline:var(--wb-focus-width) solid var(--wb-border-focus)!important;outline-offset:var(--wb-focus-offset)}
+.wb-icon-button[hidden],.wb-icon-button.hidden{display:none!important}
+
+.wb-icon-tooltip{position:fixed;inset:auto;margin:0;border:0;z-index:2147483647;max-width:min(320px,calc(100vw - 16px));padding:5px 8px;border-radius:4px;background:var(--wb-bg-inverse);color:var(--wb-text-on-accent);font:400 11px/18px var(--wb-font-family);box-shadow:0 2px 8px #0002;white-space:normal;overflow-wrap:anywhere;pointer-events:auto}
+.wb-icon-tooltip[hidden]{display:none}
+.wb-icon-tooltip::backdrop{background:transparent;pointer-events:none}
+
+/* Panel actions share one rhythm; canvas tools keep their compact dock. */
+.page-primary-actions,.page-secondary-actions,.page-list-actions,.sider-title-actions,.preview-actions,.top-actions,#historyActions,#flowHistoryActions,.element-notes-actions,.element-notes-edit-actions,.notes-detail-actions,.node-actions,.flow-object-actions,.dialog-heading>div,.mermaid-toolbar>div{display:flex;align-items:center;gap:var(--wb-space-2)}
+.page-primary-actions{margin-bottom:20px}.page-primary-actions #pageContextActions{display:contents}
+.page-primary-actions .wb-icon-button{margin:0}
+.page-secondary-actions{margin-top:20px;padding-top:16px;border-top:1px solid var(--wb-border)}
+#pageSettings .page-secondary-actions button{margin:0}
+.element-notes-edit-actions{justify-content:flex-end}.element-notes-edit-actions #enReturnRule{margin-right:auto}#enOriginActions{align-items:center}
+.element-notes-header{min-height:56px}.element-notes-actions{flex:none}
+.rule-link-trigger.wb-icon-button{gap:var(--wb-space-1);width:auto!important;padding-inline:6px!important;font-size:11px;line-height:16px}
+.rule-link-trigger.wb-icon-button[aria-expanded=true]{--wb-icon-color:var(--wb-text-link);--wb-icon-background:var(--wb-accent-subtle)}
+.rule-link-panel header,.element-requirements-heading,.element-pending-heading,.element-rule-card>div{gap:var(--wb-space-2)}
+.element-rule-card .wb-icon-button{margin:0;flex:none}.element-rule-card .rule-source-action{margin-top:var(--wb-space-1)}
+.element-notes-hint+.wb-icon-button{margin:var(--wb-space-1) var(--wb-space-4)}
+.flow-object-actions{flex-wrap:wrap;margin-block:var(--wb-space-3)}
+.node-actions{flex-wrap:wrap}.node-actions>.full{flex:1;width:auto;margin:0}
+.flow-rename-button.wb-icon-button{flex:none}.flow-list-row{padding-right:var(--wb-space-1)}
+.version-current{color:var(--wb-text-secondary);font-size:var(--wb-font-tool);white-space:nowrap}
+
+.canvas-tools{gap:var(--wb-space-1);padding:var(--wb-space-1)}
+.canvas-tools .wb-icon-button{--wb-hit-size:36px;--wb-icon-color:var(--wb-neutral-150);--wb-icon-background:transparent}
+.canvas-tools .wb-icon-button:hover{--wb-icon-color:var(--wb-text-on-accent);--wb-icon-background:var(--wb-neutral-800)}
+.canvas-tools .wb-icon-button:is([aria-pressed=true],.active){--wb-icon-color:var(--wb-text-on-accent);--wb-icon-background:var(--wb-action-primary)}
+.canvas-tools .wb-icon-button:active{--wb-icon-background:var(--wb-action-pressed)}
+.canvas-tools .wb-icon-button:disabled{--wb-icon-color:var(--wb-text-disabled);--wb-icon-background:transparent}
+.canvas-tools .wb-icon-button:focus-visible{outline-color:var(--wb-accent)!important}
+.zoom-controls{gap:0}.zoom-controls #zoomLabel{min-height:var(--wb-control-height);font-size:var(--wb-font-tool)}
+.artboard-expand.wb-icon-button{--wb-icon-background:var(--wb-bg-surface);top:-36px}
+.artboard-expand.wb-icon-button:hover{--wb-icon-background:var(--wb-bg-selected)}
+.embedded-notes-toggle.wb-icon-button{display:none}
+body.embedded .embedded-notes-toggle.wb-icon-button{display:inline-flex}
+#mobilePreviewButton.wb-icon-button{--wb-hit-size:var(--wb-control-touch);margin:0}
+
+@media(max-width:760px){
+ .wb-icon-button,.canvas-tools .wb-icon-button{--wb-hit-size:var(--wb-control-touch)}
+ .dialog-actions>button,.element-notes-edit-actions>button,.empty-canvas button,.empty-state .button,.empty-actions .button{min-height:var(--wb-control-touch)}
+ .workspace-shell .embedded-notes-toggle.wb-icon-button{display:inline-flex}
+ .element-notes-header>div:first-child{flex-basis:auto}.element-notes-actions{margin-left:auto}
+ .zoom-controls #zoomLabel{min-height:var(--wb-control-touch)}
+ .canvas-tools{flex-wrap:wrap;justify-content:center}
+ .page-list-actions{gap:var(--wb-space-1)}
+ .workspace-shell .list-heading{flex-wrap:wrap}
+ #historyActions,#flowHistoryActions{flex-wrap:wrap;gap:var(--wb-space-1)}
+ .preview-dialog .dialog-heading{height:auto;align-items:flex-start;flex-wrap:wrap}
+ .preview-dialog .dialog-heading>div{margin-left:auto}
+ .artboard-expand.wb-icon-button{top:-48px}
+}
+@media(prefers-reduced-motion:reduce){.wb-icon-button{transition:none}}
+
+.empty-actions:has(.wb-icon-button){flex-direction:row;align-items:center;justify-content:center;gap:var(--wb-space-2)}
+
+.flow-object-actions .wb-icon-button{margin:0!important}
+@media(max-width:760px){
+ /* Keep the flow name readable before exposing its contextual rename action. */
+ #flowList .flow-list-row{flex-wrap:wrap;padding:0}
+ #flowList .flow-select,#flowList .flow-rename-field{flex-basis:100%;width:100%;padding-inline:6px}
+ #flowList .flow-rename-button.wb-icon-button{display:none;margin-left:auto}
+ #flowList .flow-list-row.selected .flow-rename-button.wb-icon-button{display:inline-flex;opacity:1}
+}
