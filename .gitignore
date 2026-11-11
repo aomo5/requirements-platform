@@ -1,0 +1,11 @@
+.DS_Store
+node_modules/
+.env
+.env.*
+.runtime/
+.secrets/
+.storage-mode.json
+/workspace/
+*.log
+*.tgz
+coverage/
