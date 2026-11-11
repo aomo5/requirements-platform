@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "revision": 1,
+  "updatedAt": "2026-01-01T00:00:00.000Z",
+  "applicability": "needed",
+  "reason": "",
+  "flows": [
+    {
+      "id": "article-review",
+      "name": "知识库投稿与审核",
+      "description": "作者提交稿件，编辑决定发布或退回。",
+      "direction": "LR",
+      "nodes": [
+        {"id": "start", "type": "start", "label": "发起投稿", "x": 100, "y": 200},
+        {"id": "submit", "type": "step", "label": "填写并提交", "x": 330, "y": 200},
+        {"id": "review", "type": "decision", "label": "审核通过？", "x": 590, "y": 200},
+        {"id": "published", "type": "end", "label": "发布文章", "x": 840, "y": 200, "endScope": "business"},
+        {"id": "returned", "type": "step", "label": "填写退回原因", "x": 590, "y": 390}
+      ],
+      "edges": [
+        {"id": "start-submit", "source": "start", "target": "submit", "label": ""},
+        {"id": "submit-review", "source": "submit", "target": "review", "label": ""},
+        {"id": "review-published", "source": "review", "target": "published", "label": "通过"},
+        {"id": "review-returned", "source": "review", "target": "returned", "label": "退回"},
+        {"id": "returned-submit", "source": "returned", "target": "submit", "label": "作者修改"}
+      ]
+    }
+  ],
+  "references": []
+}
