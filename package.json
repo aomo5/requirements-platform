@@ -23,7 +23,7 @@
     "serve:team": "node scripts/service.js start --lan",
     "restart:team": "node scripts/service.js restart --lan",
     "test:workbench-cli": "node --test tests/workbench-cli.test.js tests/flow-cli.test.js tests/design-cli.test.js",
-    "test:design-cli": "node --test tests/design-cli.test.js tests/design-edit-model.test.js tests/design-batch.test.js"
+    "test:design-cli": "node --test tests/design-cli.test.js tests/design-edit-model.test.js tests/design-batch.test.js tests/design-documents.test.js"
   },
   "dependencies": {
     "css-select": "5.2.2",

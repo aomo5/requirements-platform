@@ -17,6 +17,7 @@ const { decorateRequirementRules, readRequirementRules } = require("./lib/requir
 const { createDocumentHandler } = require("./lib/document-handler");
 const { createEntryService, createEntryHandler } = require("./lib/entry-create");
 const { createDesignExportHandler } = require("./lib/design-export");
+const { createDesignDocumentsHandler, designDocumentUrl } = require("./lib/design-documents");
 const { createAiContext, createAiHandler } = require("./lib/ai-context");
 
 const HOST = process.env.HOST || "127.0.0.1";
@@ -166,6 +167,12 @@ async function handleDoc(request, response, requestUrl) {
     return;
   }
 
+  const migrated = document.entry.designDocuments?.find(item => item.file === document.file);
+  if (migrated) {
+    sendJson(response, 200, { redirect: designDocumentUrl(document.entry.path, migrated), designTarget: migrated });
+    return;
+  }
+
   const primary = database && document.entry.docs?.requirement === document.file;
   const stored = database && (primary || document.entry.documentFiles?.[document.file]) ? await database.readDocumentFile(document.entry.path,document.file) : null;
   const raw = stored?.content ?? fs.readFileSync(document.fullPath, "utf8");
@@ -198,6 +205,12 @@ async function handleDocDownload(response, requestUrl) {
 
   const tree=database ? await database.decorateTree(currentTree()) : currentTree();
   const document = readableDocument(REQUIREMENTS_ROOT, tree, requestedFile);
+  const migrated = document?.entry.designDocuments?.find(item => item.file === document.file);
+  if (migrated) {
+    response.writeHead(302, { Location: designDocumentUrl(document.entry.path, migrated), "Cache-Control": "no-store" });
+    response.end();
+    return;
+  }
   if (!document || !tree.modules.some(m=>m.features.some(e=>(Object.values(e.docs||{}).includes(document.file)||(e.pageDesigns||[]).some(d=>d.path===document.file)||(e.referenceDocuments||[]).some(d=>d.path===document.file))))) {
     sendText(response, 403, "text/plain; charset=utf-8", "Forbidden");
     return;
@@ -243,7 +256,7 @@ function handlePublic(response, requestPath) {
 }
 
 let giteeHandler;
-let entryCreateHandler, documentHandler, designExportHandler, aiHandler;
+let entryCreateHandler, documentHandler, designExportHandler, designDocumentsHandler, aiHandler;
 let database = null, designStore, flowStore, annotationStore, designHandler, designBatchHandler, flowHandler, flowBatchHandler, annotationHandler;
 const modeFile = process.env.WORKBENCH_MODE_FILE || path.join(PORTAL_ROOT, ".storage-mode.json");
 const storageMode = fs.existsSync(modeFile) ? JSON.parse(fs.readFileSync(modeFile, "utf8")).mode : (process.env.WORKBENCH_STORAGE || "files");
@@ -293,6 +306,11 @@ async function initialize() {
   designBatchHandler = createDesignBatchHandler(database, sendJson, { accessMode: DESIGN_ACCESS });
   annotationHandler = createAnnotationHandler(annotationStore, sendJson, { accessMode: DESIGN_ACCESS });
   documentHandler = createDocumentHandler(database,sendJson,{accessMode:DESIGN_ACCESS});
+  designDocumentsHandler = createDesignDocumentsHandler(database, sendJson, {
+    root: REQUIREMENTS_ROOT,
+    designStore,
+    getTree: () => database ? database.decorateTree(currentTree()) : currentTree(),
+  });
   const aiContext = createAiContext({ root: REQUIREMENTS_ROOT,
     getTree: () => database ? database.decorateTree(currentTree()) : currentTree(),
     flowStore, annotationStore, designStore,
@@ -402,6 +420,11 @@ const server = http.createServer(async (request, response) => {
 
     if (requestPath === "/api/flows" || requestPath.startsWith("/api/flows/")) {
       void flowHandler(request, response, requestUrl);
+      return;
+    }
+
+    if (requestPath === "/api/design/documents" || requestPath === "/api/design/description") {
+      await designDocumentsHandler(request, response, requestUrl);
       return;
     }
 
