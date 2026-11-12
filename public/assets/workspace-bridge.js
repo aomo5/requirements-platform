@@ -1,7 +1,7 @@
 import { createPageId } from './design-model.js';
 // Trusted workbench frames share one navigation shell. Prototype frames remain sandboxed.
 const CHANNEL = 'requirements-workspace-v1';
-const editorKeys = ['flow', 'flowSource', 'node', 'zoom', 'x', 'y', 'fromPath', 'fromFlow', 'fromSource', 'flowReturn', 'action', 'notes', 'note', 'rule', 'ruleFile'];
+const editorKeys = ['flow', 'flowSource', 'node', 'zoom', 'x', 'y', 'fromPath', 'fromFlow', 'fromSource', 'flowReturn', 'action', 'notes', 'note', 'rule', 'ruleFile', 'inspector', 'historyDocument'];
 export function workspaceHashFromUrl(value, base = location.href) {
   let url; try { url = new URL(value, base); } catch { return null; }
   if (url.origin !== location.origin) return null;
@@ -101,7 +101,7 @@ export function createWorkspaceHost({container, onState, onNavigate, onError}) {
       if (!await waitReady(frame)) return false;
       const targetChanged=kind==='design' ? args.pageId && args.pageId!==frame.state?.pageId : args.flowId && (args.flowId!==frame.state?.flowId || (args.sourcePath||args.path)!==(frame.state?.sourcePath||frame.path));
       const explicitContext = (kind === 'design' && (Object.hasOwn(args,'flowReturn') || frame.flowReturn)) || kind === 'flow' && ['node','zoom','x','y','fromPath','fromFlow','fromSource'].some(key => Object.hasOwn(args,key));
-      if (targetChanged || args.action || args.notes || args.note || args.rule || explicitContext) {
+      if (targetChanged || args.action || args.notes || args.note || args.rule || args.inspector || args.historyDocument || explicitContext) {
         if (!await request(frame,'activate',{...args,nodeId:args.node || '',noteId:args.note || ''})) { if (!await request(frame,'flush')) return false; remove(frame); frame=null; }
       }
       if (frame) {frame.flowReturn=args.flowReturn||'';send(frame,'visible');onState(kind,frame.state||{});return true;}
