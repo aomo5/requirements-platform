@@ -24,7 +24,7 @@ test("creates a readable draft and registers it without fabricating reviewed spe
   assert.ok(requirement.endsWith(input.content + "\n"));
   assert.match(fs.readFileSync(path.join(f.root, entry.docs.spec), "utf8"), /需求草稿/);
   assert.equal(entry.gitee.state, "unlinked");
-  assert.ok(fs.statSync(path.join(f.root, entry.path, "页面设计")).isDirectory());
+  assert.equal(fs.existsSync(path.join(f.root, entry.path, "页面设计")), false);
   assert.ok(fs.statSync(path.join(f.root, entry.path, "原型设计")).isDirectory());
 });
 
