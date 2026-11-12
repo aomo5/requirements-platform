@@ -21,7 +21,8 @@ node scripts/designs.js <命令> [参数]       或 npm run design -- <命令>
   patch --file 草稿.json --ops 操作.json
   note --file 草稿.json --page ID --element ID --id 说明ID --text-file 说明.txt
   check --file 草稿.json | diff --file 草稿.json
-  apply --file 草稿.json [--dry-run]
+  apply --file 草稿.json [--dry-run] [--migrations 迁移清单.json]
+  documents --path 主题路径               页面说明迁移及历史目录
   export --file 草稿.json --page ID[,ID] --format png|jpg|pdf|html --out 文件
          [--scale 1|2|3] [--transparent]    多画板输出 ZIP；--all 选择全部
   versions --path 主题路径 [--kind design|annotations]
@@ -35,7 +36,7 @@ check 不等于视觉与交互验收。退出码：0 成功、1 参数/连接、
 `;
 const SCHEMA = {
   flags: ["help", "dry-run", "password-stdin", "transparent", "all"],
-  keys: ["url", "username", "path", "out", "file", "page", "element", "match", "html", "name", "width", "height", "x", "y", "source", "route", "platform", "group", "ops", "id", "text-file", "text", "kind", "format", "scale"],
+  keys: ["url", "username", "path", "out", "file", "page", "element", "match", "html", "name", "width", "height", "x", "y", "source", "route", "platform", "group", "ops", "id", "text-file", "text", "kind", "format", "scale", "migrations"],
 };
 const emit = value => process.stdout.write(typeof value === "string" ? value : JSON.stringify(value, null, 2) + "\n");
 function link(origin, entryPath, pageId) { return origin + "/#" + new URLSearchParams({ path: entryPath, view: "design", ...(pageId ? { page: pageId } : {}) }); }
@@ -59,7 +60,7 @@ function writeDraft(file, next, options, output) {
 async function run(argv, { output = emit, clientFactory = options => new DesignClient(options) } = {}) {
   const { command, options } = parseArgs([...argv], SCHEMA);
   if (command === "help" || options.help) { output(HELP); return 0; }
-  if (!["login", "whoami", "logout", "list", "pull", "show", "elements", "html", "import", "patch", "note", "check", "diff", "apply", "export", "versions", "rules", "link"].includes(command)) throw new CliError("未知命令：" + command);
+  if (!["login", "whoami", "logout", "list", "pull", "show", "elements", "html", "import", "patch", "note", "check", "diff", "apply", "export", "versions", "rules", "link", "documents"].includes(command)) throw new CliError("未知命令：" + command);
   if (["login", "whoami", "logout"].includes(command)) {
     const client = clientFactory({ url: options.url });
     if (command === "login") {
@@ -69,8 +70,9 @@ async function run(argv, { output = emit, clientFactory = options => new DesignC
     } else output(await client[command]());
     return 0;
   }
-  if (["list", "pull", "versions", "rules", "link"].includes(command)) {
+  if (["list", "pull", "versions", "rules", "link", "documents"].includes(command)) {
     const entryPath = required(options, "path"), client = clientFactory({ url: options.url });
+    if (command === 'documents') { output(await client.request('/api/design/documents?' + new URLSearchParams({path:entryPath}))); return 0; }
     if (command === "link") { output(link(client.origin, entryPath, options.page) + "\n"); return 0; }
     if (command === "rules") { output(await client.request("/api/requirement-rules?" + new URLSearchParams({ path: entryPath }))); return 0; }
     if (command === "versions") {
@@ -80,7 +82,7 @@ async function run(argv, { output = emit, clientFactory = options => new DesignC
     }
     const data = await client.bundle(entryPath);
     if (command === "list") output({ entryPath, revision: data.workspace.revision, annotationsRevision: data.annotations.revision, canEdit: data.canEdit,
-      pages: data.workspace.pages.map(({ html, ...p }) => ({ ...p, htmlLength: html.length, url: link(client.origin, entryPath, p.id) })) });
+      pages: data.workspace.pages.map(({ html, description, ...p }) => ({ ...p, descriptionLength: description?.length || 0, htmlLength: html.length, url: link(client.origin, entryPath, p.id) })) });
     else {
       const file = required(options, "out");
       writeFile(file, model.createBundle(client.origin, entryPath, data.workspace, data.annotations, data.context), { exclusive: true });
@@ -93,7 +95,7 @@ async function run(argv, { output = emit, clientFactory = options => new DesignC
   if (command === "patch") { writeDraft(file, model.applyOperations(bundle, readJson(required(options, "ops"))), options, output); return 0; }
   if (command === "import") {
     const id = required(options, "page"), html = readText(required(options, "html"));
-    const old = bundle.draft.workspace.pages.find(p => p.id === id), fields = { html };
+    const old = bundle.draft.workspace.pages.find(p => p.id === id), fields = { html, status:'designed' };
     for (const key of ["name", "source", "route", "platform", "group"]) if (Object.hasOwn(options, key)) fields[key] = options[key];
     for (const key of ["width", "height", "x", "y"]) if (Object.hasOwn(options, key)) {
       if (!Number.isFinite(Number(options[key]))) throw new CliError(`--${key} 必须为数字`);
@@ -158,6 +160,7 @@ async function run(argv, { output = emit, clientFactory = options => new DesignC
     output({ file: path.resolve(out), bytes: result.bytes.length, format: extension, pages: pages.map(p => p.id), savedToWorkbench: false }); return 0;
   }
   const diff = model.diffBundle(bundle), payload = model.payloadForApply(bundle);
+  if (options.migrations) payload.migrations = readJson(options.migrations);
   const result = await client.apply(bundle.entryPath, payload, Boolean(options["dry-run"]));
   if (options["dry-run"]) { output({ dryRun: true, diff, check, server: result }); return 0; }
   try { writeFile(file, model.createBundle(bundle.origin, bundle.entryPath, result.workspace, result.annotations, result.context || bundle.context), { expectedContent: original }); }

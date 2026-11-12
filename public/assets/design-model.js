@@ -8,7 +8,7 @@ export const samePages = (left, right) => left.length === right.length && left.e
 });
 export function createEditHistory(pages = [], limit = 30, budget = 8000000) {
   let current = copyPages(pages), past = [], future = [];
-  const weight = (entries) => { const html = new Set(entries.flatMap(entry => entry.map(page => page.html || ""))); return entries.reduce((sum, entry) => sum + entry.length * 256, 0) + [...html].reduce((sum, value) => sum + value.length * 2, 0); };
+  const weight = (entries) => { const html = new Set(entries.flatMap(entry => entry.map(page => [page.html || '',page.description || '',page.overview || ''].join('')))); return entries.reduce((sum, entry) => sum + entry.length * 256, 0) + [...html].reduce((sum, value) => sum + value.length * 2, 0); };
   function trim() {
     while (past.length > 1 && (past.length > limit || weight(past) > budget)) past.shift();
   }
@@ -79,4 +79,11 @@ export function fitPages(pages, width, height) {
 export function blankHtml(name) {
   const safe = name.replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   return `<!doctype html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>${safe}</title>\n<style>\n* { box-sizing: border-box; }\nbody { margin: 0; background: #fff; color: #1e293b; font: 14px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; }\n</style>\n</head>\n<body></body>\n</html>`;
+}
+
+export function createDesignEditHistory(workspace = {pages:[]}) {
+  const pack=w=>[...w.pages,{id:'$overview',overview:w.overview||''}];
+  const unpack=rows=>rows?{pages:rows.slice(0,-1),overview:rows.at(-1).overview}:null;
+  const history=createEditHistory(pack(workspace));
+  return {get canUndo(){return history.canUndo},get canRedo(){return history.canRedo},record:w=>history.record(pack(w)),undo:()=>unpack(history.undo()),redo:()=>unpack(history.redo())};
 }

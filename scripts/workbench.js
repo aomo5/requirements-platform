@@ -9,8 +9,8 @@ workbench config --url http://局域网服务器:8125
 workbench login | whoami | logout
 workbench list
 workbench flow <命令> | design <命令>       运行对应 help 查看
-workbench requirement|interface|spec|task|page <命令>
-  pull --path 主题 --out 草稿.json         page 还需 --document 页面设计/页面名.md
+workbench requirement|interface|spec|task|document <命令>
+  pull --path 主题 --out 草稿.json         document 还需 --document 补充文档.md
   import --file 草稿.json --content 正文.md
   show|check|diff --file 草稿.json
   export --file 草稿.json --out 正文.md
@@ -29,7 +29,7 @@ const SCHEMA = { flags: ["help", "dry-run"], keys: ["url", "path", "out", "file"
 function query(p, file) { return new URLSearchParams({ path: p, ...(file ? { file } : {}) }); }
 function documentFile(area, o) {
   const p = required(o, "path"), relative = o.document || FILES[area];
-  if (!relative) throw new CliError("page 命令需要 --document 页面设计/页面名.md");
+  if (!relative) throw new CliError("补充文档命令需要 --document 逻辑文件；页面说明请使用 design");
   if (relative.startsWith(p + "/")) return relative;
   return p + "/" + relative;
 }
@@ -69,7 +69,7 @@ async function run(argv, { output = emit, clientFactory = o => new WorkbenchClie
     output(await client.request("/api/tests/" + ({ link: "links", unlink: "unlink", run: "runs" })[command] + suffix, { method: "POST", body }));
     return 0;
   }
-  if (!Object.hasOwn(FILES, area) && area !== "page") throw new CliError("未知板块：" + area);
+  if (!Object.hasOwn(FILES, area) && !["page","document"].includes(area)) throw new CliError("未知板块：" + area);
   if (command === "create" && area === "requirement") {
     output(await client.request("/api/entries", { method: "POST", body: { module: required(o, "module"), name: required(o, "name"), content: text(required(o, "content")) } })); return 0;
   }
@@ -84,6 +84,7 @@ async function run(argv, { output = emit, clientFactory = o => new WorkbenchClie
       output({ file: path.resolve(o.out), revision }); return 0;
     }
     const data = await client.request("/api/document" + suffix), out = required(o, "out");
+    if(data.redirect)throw new CliError("页面说明已迁入设计，请使用 workbench design pull；入口："+client.origin+data.redirect,409);
     writeFile(out, model.bundle(client.origin, p, file, data), { exclusive: true });
     output({ file: path.resolve(out), revision: data.revision, canEdit: data.canEdit }); return 0;
   }

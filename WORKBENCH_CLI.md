@@ -33,7 +33,7 @@ workbench design pull --path '01-通用需求/功能名称' --out design-draft.j
 
 ## 需求、接口与其他文档
 
-`requirement` 对应需求文档、`interface` 对应接口契约、`spec` 对应规格索引、`task` 对应任务拆分；`page` 用 `--document 页面设计/页面名.md` 指定页面说明。也可用 `--document` 指定当前主题下的合法补充文档。
+`requirement` 对应需求文档，`interface` 对应接口契约，`spec` 对应规格索引，`task` 对应任务拆分。补充文档使用 `document --document 文件名.md`。设计总说明和页面说明通过 `workbench design` 维护。
 
 ```sh
 workbench interface pull --path '01-通用需求/功能名称' --out contract-draft.json
@@ -46,7 +46,6 @@ workbench interface apply --file contract-draft.json --dry-run
 workbench interface apply --file contract-draft.json
 workbench interface versions --path '01-通用需求/功能名称'
 workbench interface version --path '01-通用需求/功能名称' --revision 1 --out contract-v1.md
-workbench page pull --path '01-通用需求/功能名称' --document '页面设计/文章详情.md' --out page-note.json
 ```
 
 缺失的配套文档可从版本 0 开始创建。`export`、历史版本导出及 `pull` 不覆盖已有文件。恢复旧内容时，将历史版本导入最新草稿，再预演、保存，生成新版本。需求段落 ID 由服务端在编辑时协调保留，不手工添加 `wb-rule` 标记。临时 Markdown 是编辑副本，正式文档仍在数据库。

@@ -1,6 +1,7 @@
 import { icon, controlHint, iconButton, iconButtons } from "./workbench-icons.js";
+import { createDesignDescriptions } from './design-description.js';
 import { pageStates } from "./design-states.js";
-import { clone, clamp, arrangePages, fitPages, blankHtml, createPageId, copyPages, samePages, createEditHistory, uniquePageName, nextPagePosition } from "./design-model.js";
+import { clone, clamp, arrangePages, fitPages, blankHtml, createPageId, copyPages, samePages, createDesignEditHistory, uniquePageName, nextPagePosition } from "./design-model.js";
 import { pageOrganization, pageGroups, bounds, intersects, movePages, organizePages, snapDelta, reorderPages, zoomAt, canvasWheel } from "./design-navigation.js";
 import { createElementEditor } from "./design-elements.js";
 import { createPageAnnotations } from "./page-annotations.js";
@@ -38,11 +39,11 @@ const state = { path: "", entry: null, workspace: { revision: 0, pages: [] }, se
 const canvasPages = () => state.expanded?.pages || state.workspace.pages;
 const selected = () => canvasPages().find((page) => page.id === state.selected);
 const buttons = ["saveButton", "addButton", "emptyAdd", "importButton", "arrangeButton"];
-let editHistory = createEditHistory(), savedPages = [], spaceMode = null;
+let editHistory = createDesignEditHistory(), savedPages = [], savedOverview = '', spaceMode = null;
 let workspaceBridge = null, pageAnnotations = null, saveTimer, savePromise = null, editorTimer, editorTargetId = "", draftBaseRevision = null, draftBaseHash = null, savedHash = "";
 let fieldDrafts = {}, htmlDrafts = {}, storageWarning = "";
 let pageRename = null, importing = false, elementEditor = null, elementReturnView = null;
-let designExporter = null;
+let designExporter = null, descriptions = null;
 const composing = new Set();
 const initialParams = new URLSearchParams(location.search);
 const shell = initialParams.get("shell") === "1";
@@ -53,7 +54,7 @@ if (shell) {
   $("historyActions").append($("saveButton"));
   $("statesContext").before($("returnFlowContext"));
 }
-for (const button of document.querySelectorAll('[data-close]:not(#returnCanvasButton)')) iconButton(button, 'close', button.getAttribute('aria-label') || '关闭页面预览');
+for (const button of document.querySelectorAll('[data-close]:not(#returnCanvasButton):not(#descriptionDialog .dialog-actions button)')) iconButton(button, 'close', button.getAttribute('aria-label') || '关闭页面预览');
 controlHint($('zoomLabel'), '还原到 100%');
 controlHint($('fitSelectionButton'), '定位选中 · Shift 2');
 let returnParams = initialParams.get("return") || "";
@@ -78,22 +79,25 @@ function syncLocation() {
   if (flowReturn) params.set("flowReturn", flowReturn);
   if (shell) params.set("shell", "1");
   if (initialParams.get("embed") === "1") params.set("embed", "1");
+  if (initialParams.get("standalone") === "1") params.set("standalone", "1");
   if (initialParams.get("shellToken")) params.set("shellToken", initialParams.get("shellToken"));
   history.replaceState(null, "", `/design?${params}`);
   if (!returnParams) $("portalLink").href = portalUrl("preview");
 }
-function pagesFingerprint(pages) {
+function pagesFingerprint(pages, overview = '') {
+  if(overview) pages=[...pages,{overview}];
   const text = JSON.stringify(pages.map((page) => Object.fromEntries(Object.keys(page).sort().map((key) => [key, page[key]]))));
   let first = 2166136261, second = 5381;
   for (let index = 0; index < text.length; index++) { const value = text.charCodeAt(index); first = Math.imul(first ^ value, 16777619); second = Math.imul(second, 33) ^ value; }
   return `${text.length}:${(first >>> 0).toString(16)}:${(second >>> 0).toString(16)}`;
 }
-function resetHistory() { savedPages = copyPages(state.workspace.pages); savedHash = pagesFingerprint(savedPages); editHistory = createEditHistory(state.workspace.pages); }
+function resetHistory() { savedPages = copyPages(state.workspace.pages); savedOverview=state.workspace.overview||''; savedHash = pagesFingerprint(savedPages,savedOverview); editHistory = createDesignEditHistory(state.workspace); }
 async function travelHistory(direction) {
   if (elementEditor?.pageId && !await elementEditor.flush()) return;
   if (!state.editable || state.busy || state.expanded) return;
   if (!finishPageRename()) return;
-  const pages = editHistory[direction](); if (!pages) return;
+  const snapshot = editHistory[direction](); if (!snapshot) return;
+  const pages=snapshot.pages;state.workspace.overview=snapshot.overview;
   const previous = selected();
   state.workspace.pages = pages;
   const ids = new Set(pages.map((page) => page.id));
@@ -102,7 +106,7 @@ async function travelHistory(direction) {
   if (!pages.some((page) => page.id === state.selected)) {
     state.selected = previous ? pages.slice().sort((left, right) => Math.hypot(left.x - previous.x, left.y - previous.y) - Math.hypot(right.x - previous.x, right.y - previous.y))[0]?.id || "" : pages[0]?.id || "";
   }
-  state.change++; state.dirty = !samePages(pages, savedPages); persistDraft(); scheduleSave(); renderCanvas(); syncLocation();
+  state.change++; state.dirty = !samePages(pages, savedPages) || (state.workspace.overview||'')!==savedOverview; persistDraft(); scheduleSave(); renderCanvas(); syncLocation();
 }
 
 let toastTimer;
@@ -120,8 +124,8 @@ async function api(action = "", options = {}, entryPath = state.path) {
   return result;
 }
 function dirty(delay = 600) {
-  if (!editHistory.record(state.workspace.pages)) return;
-  state.dirty = !samePages(state.workspace.pages, savedPages); state.change++; persistDraft(); scheduleSave(delay); renderStatus(); syncLocation();
+  if (!editHistory.record(state.workspace)) return;
+  state.dirty = !samePages(state.workspace.pages, savedPages) || (state.workspace.overview||'')!==savedOverview; state.change++; persistDraft(); scheduleSave(delay); renderStatus(); syncLocation();
 }
 function hasInputDraft() { return Object.keys(fieldDrafts).length > 0 || Object.keys(htmlDrafts).length > 0; }
 function draftKey() { return `requirementsPortal.designDraft.v2:${encodeURIComponent(state.path)}`; }
@@ -133,7 +137,7 @@ function persistDraft() {
   if (!state.dirty && !state.saving && !hasInputDraft() && !state.conflict) { clearDraft(); storageWarning = ""; return; }
   const text = JSON.stringify({ version: 2, path: state.path, baseRevision: draftBaseRevision ?? state.workspace.revision,
     baseHash: draftBaseHash ?? savedHash,
-    pages: state.workspace.pages, selected: state.expanded?.selectedId || state.selected, fieldDrafts, htmlDrafts, updatedAt: Date.now() });
+    pages: state.workspace.pages, overview:state.workspace.overview||'', selected: state.expanded?.selectedId || state.selected, fieldDrafts, htmlDrafts, updatedAt: Date.now() });
   for (const name of ["localStorage", "sessionStorage"]) {
     try { window[name].setItem(draftKey(), text); storageWarning = ""; return; } catch { /* Try the tab-local fallback before reporting a storage limit. */ }
   }
@@ -180,10 +184,10 @@ async function saveSnapshot() {
   const path = state.path, request = state.request;
   savePromise = (async () => {
     while (state.dirty && !state.saveError && !state.conflict) {
-      const pages = copyPages(state.workspace.pages), expectedRevision = state.workspace.revision;
+      const pages = copyPages(state.workspace.pages), overview=state.workspace.overview||'', expectedRevision = state.workspace.revision;
       state.saving = true; renderStatus();
       try {
-        const result = await api("", { method: "PUT", body: JSON.stringify({ expectedRevision, pages }) }, path);
+        const result = await api("", { method: "PUT", body: JSON.stringify({ expectedRevision, pages, overview }) }, path);
         if (path !== state.path || request !== state.request) return false;
         state.workspace.revision = result.workspace.revision; state.workspace.updatedAt = result.workspace.updatedAt;
         // Accept server-added element IDs only if that page was not edited while saving.
@@ -191,8 +195,8 @@ async function saveSnapshot() {
           const submitted = pages.find(p => p.id === saved.id), current = state.workspace.pages.find(p => p.id === saved.id);
           if (current && submitted && current.html === submitted.html) current.html = saved.html;
         }
-        savedPages = copyPages(result.workspace.pages); savedHash = pagesFingerprint(savedPages); draftBaseRevision = null; draftBaseHash = null;
-        state.dirty = !samePages(state.workspace.pages, savedPages); persistDraft();
+        savedPages = copyPages(result.workspace.pages); savedOverview=result.workspace.overview||''; savedHash = pagesFingerprint(savedPages,savedOverview); draftBaseRevision = null; draftBaseHash = null;
+        state.dirty = !samePages(state.workspace.pages, savedPages) || (state.workspace.overview||'')!==savedOverview; persistDraft();
       } catch (error) {
         if (path !== state.path || request !== state.request) return false;
         state.conflict = error.status === 409; draftBaseRevision = expectedRevision; draftBaseHash = savedHash;
@@ -240,7 +244,7 @@ function renderStatus() {
   $("annotationsButton").disabled ||= state.selection.length > 1; $("reviewLinkButton").disabled ||= state.selection.length > 1;
   $("elementEditButton").disabled = !selected() || state.selection.length !== 1 || !state.editable || state.busy || !!state.expanded;
   $("elementEditButton").hidden = !!elementEditor?.pageId;
-  $("previewButton").disabled = !selected(); $("mobilePreviewButton").disabled = !selected();
+  $("previewButton").disabled = !selected() || selected().status==='planned'; $("mobilePreviewButton").disabled = $("previewButton").disabled;
   $("undoButton").disabled = (!editHistory.canUndo && !(elementEditor?.pageId && htmlDrafts[elementEditor.pageId] !== undefined)) || !state.editable || state.busy || !!state.expanded;
   $("redoButton").disabled = !editHistory.canRedo || !state.editable || state.busy || !!state.expanded;
   $("reviewLinkButton").disabled = !selected() || state.selection.length > 1 || !!state.expanded || state.busy;
@@ -264,6 +268,7 @@ function updateStateDisclosure() {
   toggle.disabled = state.busy;
 }
 function updateInspector() {
+  descriptions?.update();
   updateStateDisclosure();
   document.body.classList.toggle("states-expanded", !!state.expanded);
   const page = selected(), disabled = !page || !state.editable || state.busy || !!state.expanded;
@@ -382,10 +387,11 @@ function selectGroup(group) { return setSelection(group.pages.map(p => p.id)); }
 function pageListButton(page) {
   const button = document.createElement('button'), span = document.createElement('span');
   span.textContent = pageOrganization(page).label;
+  if(page.status==='planned'){button.title='待设计';button.dataset.status='planned';}
   button.innerHTML = icon('frame');
   button.append(span); button.dataset.page = page.id;
   button.classList.toggle('selected', state.selection.includes(page.id)); button.setAttribute('aria-pressed', String(state.selection.includes(page.id)));
-  button.title = `${page.name} · ${page.width} × ${page.height}`; button.setAttribute('aria-label', page.name);
+  button.title = page.status==='planned'?`${page.name} · 待设计`:`${page.name} · ${page.width} × ${page.height}`; button.setAttribute('aria-label', page.name);
   button.addEventListener('click', async event => { if (await select(page.id, { toggle: event.shiftKey || event.metaKey || event.ctrlKey })) ensureVisible(page); });
   button.addEventListener('dblclick', () => { if (state.editable && !state.busy && !state.expanded) beginPageRename(page.id); });
   enableTreeDrag(button, [page.id], 'page');
@@ -653,6 +659,7 @@ function beginBoardDrag(event, page, node, group = false) {
 
 function documentHtml(page, { passive = false } = {}) {
   const doc = new DOMParser().parseFromString(page.html, "text/html");
+  if(page.status==='planned'){doc.head.innerHTML='<meta charset="utf-8"><style>body{margin:0;background:#fff;color:#888;font:14px/1.8 system-ui;display:grid;place-content:center;min-height:100vh;text-align:center}h2{font-size:20px;color:#333}</style>';doc.body.replaceChildren();const title=doc.createElement('h2');title.textContent=page.name;const status=doc.createElement('p');status.textContent='待设计';doc.body.append(title,status);}
   doc.querySelectorAll("base,meta[http-equiv='refresh' i]").forEach((node) => node.remove());
   // The hit layer blocks clicks, but cannot stop a prototype's async focus().
   // Keep focus inside the editor while thumbnails render during a drag. Full
@@ -870,13 +877,14 @@ async function loadWorkspace(entryPath, requestedPage = "") {
     if (draft) {
       const revisionMatches = draft.baseRevision === state.workspace.revision && typeof draft.baseHash === "string" && draft.baseHash === savedHash;
       state.workspace.pages = copyPages(draft.pages);
+      if(typeof draft.overview==='string')state.workspace.overview=draft.overview;
       fieldDrafts = draft.fieldDrafts && typeof draft.fieldDrafts === "object" && !Array.isArray(draft.fieldDrafts) ? draft.fieldDrafts : {};
       htmlDrafts = draft.htmlDrafts && typeof draft.htmlDrafts === "object" && !Array.isArray(draft.htmlDrafts) ? draft.htmlDrafts : {};
       const ids = new Set(state.workspace.pages.map((page) => page.id));
       fieldDrafts = Object.fromEntries(Object.entries(fieldDrafts).filter(([key, value]) => typeof value === "string" && ids.has(key.slice(0, key.lastIndexOf(":")))));
       htmlDrafts = Object.fromEntries(Object.entries(htmlDrafts).filter(([key, value]) => ids.has(key) && typeof value === "string"));
       state.selected = state.workspace.pages.find((page) => page.id === (requestedPage || draft.selected))?.id || state.workspace.pages[0]?.id || "";
-      editHistory.record(state.workspace.pages); state.dirty = !samePages(state.workspace.pages, savedPages);
+      editHistory.record(state.workspace); state.dirty = !samePages(state.workspace.pages, savedPages) || (state.workspace.overview||'')!==savedOverview;
       if (!revisionMatches) {
         state.conflict = true; draftBaseRevision = draft.baseRevision; draftBaseHash = typeof draft.baseHash === "string" ? draft.baseHash : "unknown";
         state.saveError = "已保存版本已变化，本机草稿已恢复，自动保存已暂停";
@@ -890,9 +898,7 @@ async function loadWorkspace(entryPath, requestedPage = "") {
     $("flowLink").href = flowReturn || `/#${new URLSearchParams({ path: state.path, view: "flow" })}`;
     $("flowLink").textContent = flowReturn ? "返回流程" : "流程";
     updateFlowReturn(flowReturn);
-    const pagesLink = new URLSearchParams({ path: state.path, view: "doc", doc: "page" });
-    if (state.entry.pageDesigns?.[0]) pagesLink.set("file", state.entry.pageDesigns[0].path);
-    $("pageDesignLink").href = `/#${pagesLink}`;
+
     state.busy = false; state.selection = state.selected ? [state.selected] : [];
     collapsed = new Set(pageGroups(canvasPages()).filter(g => !g.pages.some(p => p.id === state.selected)).map(g => g.key));
     let view = null; try { view = JSON.parse(sessionStorage.getItem(viewKey()) || 'null'); } catch {}
@@ -925,7 +931,7 @@ function insertPage({ name, html, source = "", width, height }) {
   const pages = state.workspace.pages, anchor = selected() || pages.at(-1);
   width ??= anchor?.width || 390; height ??= anchor?.height || 844;
   name = uniquePageName(pages, name);
-  const page = { id: createPageId(), name, width, height, ...nextPagePosition(pages, width, height, anchor), html: html ?? blankHtml(name), source, route: "" };
+  const page = { id: createPageId(), name, width, height, ...nextPagePosition(pages, width, height, anchor), html: html ?? blankHtml(name), status:html?'designed':'planned', source, route: "" };
   pages.push(page); state.selected = page.id; $("pageSearch").value = ""; setMode("select");
   dirty(); renderCanvas(); focusPage(page);
   $("pageList").querySelector(".selected")?.scrollIntoView({ block: "nearest" });
@@ -1059,7 +1065,7 @@ function applyHtmlDraft(id) {
   if (html === undefined) return true;
   if (!page || htmlProblem(html) || composing.has("htmlEditor")) return false;
   delete htmlDrafts[id];
-  if (page.html !== html) { page.html = html; dirty(0); renderCanvas(); }
+  if (page.html !== html) { page.html = html; page.status='designed'; dirty(0); renderCanvas(); }
   if (id === editorTargetId && $("editorDialog").open) $("editorPreview").srcdoc = documentHtml(page);
   persistDraft(); renderStatus(); return true;
 }
@@ -1134,6 +1140,7 @@ function renderPreview() {
   $('previousPage').disabled=index<=0;$('nextPage').disabled=index===previewIds.length-1;
 }
 async function openPreview() {
+  if(selected()?.status==='planned'){await descriptions.open(selected().id);return;}
   if(!selected() || elementEditor?.pageId && !await elementEditor.flush())return;
   if(!$('previewDialog').open){
     previewCompare=false;previewContext=captureView();previewIds=(state.selection.length>1?selectionPages():canvasPages()).map(p=>p.id);previewId=state.selected;
@@ -1220,6 +1227,7 @@ async function openVersions() {
       });
       row.append(label, button); $("versionsList").append(row);
     }
+    await descriptions.historyList($('versionsList'));
   } catch (error) { $("versionsList").textContent = error.message; }
 }
 function duplicatePage() {
@@ -1228,7 +1236,7 @@ function duplicatePage() {
   if(state.workspace.pages.length+originals.length>120)return toast('最多保存 120 个页面，当前选择无法全部复制',true);
   if(!finishPageRename())return;
   const copies=[];
-  for(const original of originals){const page={...original,id:createPageId(),name:uniquePageName([...state.workspace.pages,...copies],`${original.name.slice(0,94)} 副本`),...nextPagePosition([...state.workspace.pages,...copies],original.width,original.height,original)};copies.push(page);}
+  for(const original of originals){const page={...original,id:createPageId(),name:uniquePageName([...state.workspace.pages,...copies],`${original.name.slice(0,94)} 副本`),...nextPagePosition([...state.workspace.pages,...copies],original.width,original.height,original)};if(original.description || original.descriptionPageId){page.descriptionPageId=original.descriptionPageId||original.id;delete page.description;}copies.push(page);}
   state.workspace.pages.push(...copies);state.selection=copies.map(p=>p.id);state.selected=copies[0].id;$('pageSearch').value='';
   dirty();renderCanvas();focusSelection();
 }
@@ -1236,7 +1244,10 @@ async function deleteSelection() {
   if(state.expanded||!state.editable||state.busy)return;
   const pages=selectionPages();if(!pages.length)return;
   if(!await confirmAction('删除页面',`删除选中的 ${pages.length} 张画板？已有需求和流程引用将标记为目标缺失，可通过撤销或版本恢复。`,'删除页面'))return;
-  const ids=new Set(pages.map(p=>p.id));state.workspace.pages=state.workspace.pages.filter(p=>!ids.has(p.id));state.selection=[];state.selected='';
+  const ids=new Set(pages.map(p=>p.id));
+  const dependents=state.workspace.pages.filter(p=>!ids.has(p.id)&&ids.has(p.descriptionPageId));
+  if(dependents.length){toast('此页面的说明仍被其他状态共用，请先合并页面或调整说明来源',true);return;}
+  state.workspace.pages=state.workspace.pages.filter(p=>!ids.has(p.id));state.selection=[];state.selected='';
   for(const id of ids){delete htmlDrafts[id];for(const key of Object.keys(fieldDrafts))if(key.startsWith(`${id}:`))delete fieldDrafts[key];}
   dirty();renderCanvas();
 }
@@ -1277,9 +1288,9 @@ $("retryConflict").addEventListener("click", async () => {
   state.busy = true; renderStatus();
   try {
     const result = await api();
-    if (!samePages(result.workspace.pages, state.workspace.pages)) { $("conflictMessage").textContent = "已保存内容仍有其他修改，未覆盖。可下载本机草稿，或读取已保存版本继续编辑。"; return; }
+    if (!samePages(result.workspace.pages, state.workspace.pages) || (result.workspace.overview||'')!==(state.workspace.overview||'')) { $("conflictMessage").textContent = "已保存内容仍有其他修改，未覆盖。可下载本机草稿，或读取已保存版本继续编辑。"; return; }
     state.workspace.revision = result.workspace.revision; state.workspace.updatedAt = result.workspace.updatedAt;
-    savedPages = copyPages(result.workspace.pages); savedHash = pagesFingerprint(savedPages); state.dirty = false; state.conflict = false; state.saveError = ""; draftBaseRevision = null; draftBaseHash = null;
+    savedPages = copyPages(result.workspace.pages); savedOverview=result.workspace.overview||''; savedHash = pagesFingerprint(savedPages,savedOverview); state.dirty = false; state.conflict = false; state.saveError = ""; draftBaseRevision = null; draftBaseHash = null;
     persistDraft(); $("conflictDialog").close();
   } catch (error) { $("conflictMessage").textContent = error.message; }
   finally { state.busy = false; renderStatus(); }
@@ -1415,7 +1426,7 @@ async function openAnnotationsForContext({ noteId, note, requirement, rule, rule
 }
 workspaceBridge = installWorkspaceBridge({
   kind: "design", getState: saveStatus, flush: flushAll,
-  activate: async ({ pageId, notes, noteId, note, requirement, rule, ruleFile, flowReturn: returnFlow = "" }) => {
+  activate: async ({ pageId, notes, noteId, note, requirement, rule, ruleFile, inspector, historyDocument, flowReturn: returnFlow = "" }) => {
     if (!state.entry || !await flushAll()) return false;
     if (pageId && !state.workspace.pages.some((page) => page.id === pageId)) return false;
     if (!await pageAnnotations.close()) return false;
@@ -1427,6 +1438,8 @@ workspaceBridge = installWorkspaceBridge({
     if (state.expanded) closeStates();
     updateFlowReturn(returnFlow);
     if (pageId && pageId !== state.selected) { select(pageId); ensureVisible(selected()); }
+    if (historyDocument) await descriptions.history(historyDocument);
+    else if (inspector) await descriptions.open(inspector==='description'?state.selected:'');
     if (notes === "1" || noteId || note || requirement || rule) return await openAnnotationsForContext({ noteId, note, requirement, rule, ruleFile });
     return true;
   },
@@ -1448,7 +1461,8 @@ async function start() {
     else { $("featureTitle").textContent = "暂无需求"; $("saveState").textContent = "请先在需求目录建立功能"; }
   } catch (error) { $("featureTitle").textContent = "工作台加载失败"; toast(error.message, true); }
 }
-start();
+descriptions=createDesignDescriptions({state,selected,api,dirty,flush:flushDesign,render:renderCanvas,toast});
+start().then(async()=>{if(initialParams.get('historyDocument'))await descriptions.history(initialParams.get('historyDocument'));else if(initialParams.get('inspector'))await descriptions.open(initialParams.get('inspector')==='description'?state.selected:'');});
 
 $('mergePageButton').addEventListener('click',async()=>{
  if(!selected()||!state.editable||state.busy||state.expanded)return;

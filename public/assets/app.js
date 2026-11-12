@@ -189,7 +189,7 @@ import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mj
     state.previewQuery = params.get('prototypeQuery') || '';
     state.selectedFlowId = params.get("flow") || "";
     state.selectedFlowSource = params.get("flowSource") || state.selectedPath;
-    state.editorOptions=Object.fromEntries(["node","zoom","x","y","fromPath","fromFlow","fromSource","flowReturn","action","notes","note","rule","ruleFile"].filter(key=>params.has(key)).map(key=>[key,params.get(key)]));
+    state.editorOptions=Object.fromEntries(["node","zoom","x","y","fromPath","fromFlow","fromSource","flowReturn","action","notes","note","rule","ruleFile","inspector","historyDocument"].filter(key=>params.has(key)).map(key=>[key,params.get(key)]));
   }
   function designUrl(pageId = "") {
     const params=locationParams();params.set('view','design');params.delete('notes');params.delete('action');
@@ -296,7 +296,6 @@ import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mj
   }
   function getDocuments(includeExternal = true) {
     const docs = DOC_PRIORITY.filter((key) => state.entry?.docs?.[key]).map((key) => ({ key, file: state.entry.docs[key], label: DOC_LABELS[key], downloadable: true }));
-    for (const item of state.entry?.pageDesigns || []) docs.push({ key: "page", file: item.path, label: `页面 · ${item.name.replace(/\.md$/i, "")}`, downloadable: true });
     for (const item of state.entry?.referenceDocuments || []) docs.push({key:"other",file:item.path,label:`资料 · ${item.name.replace(/\.md$/i, "")}`,downloadable:true});
     if (includeExternal && state.file && !docs.some((item) => item.file === state.file)) docs.push({ key: "other", file: state.file, label: state.file.split("/").pop().replace(/\.md$/i, ""), downloadable: false });
     return docs;
@@ -304,6 +303,14 @@ import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mj
   function getCurrentDocFile() { return state.file || (state.docKey === "page" ? state.entry?.pageDesigns?.[0]?.path : state.entry?.docs?.[state.docKey]) || ""; }
   function currentDocLabel() { return getDocuments().find((item) => item.file === getCurrentDocFile())?.label || DOC_LABELS[state.docKey] || "文档"; }
   function normalizeDocument() {
+    if(state.entry && state.activeView==='doc' && (state.docKey==='page'||state.file.startsWith(state.entry.path+'/页面设计/'))){
+      const file = state.file || state.entry.pageDesigns?.[0]?.path || state.entry.designDocuments?.[0]?.file;
+      const mapping = state.entry.designDocuments?.find(document => document.file === file);
+      state.activeView='design';state.docKey='requirement';state.file='';state.heading='';
+      if(mapping?.pageId)state.selectedPrototypePath='design:'+mapping.pageId;
+      if(file && (!mapping || mapping.target==='history'))state.editorOptions={historyDocument:file};
+      else state.editorOptions={inspector:mapping?.pageId?'description':'overview'};
+    }
     if (state.file && (!state.entry || !state.file.startsWith(`${state.entry.path}/`) || !/\.md$/i.test(state.file))) state.file = "";
     if (state.file) {
       const known = getDocuments(false).find((item) => item.file === state.file);
@@ -332,7 +339,6 @@ import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mj
       nodes.entryGiteeLink.className = `gitee-status status-${gitee.state || "unlinked"}`;
       nodes.entryGiteeStatus.classList.add("hidden");
     }
-    document.getElementById('newPageDocumentButton').hidden=!(state.entry && (state.entry?.canEdit ?? state.tree?.canEditDocuments) && state.activeView==='doc' && state.docKey==='page');
     const docs = getDocuments();
     nodes.documentSelect.innerHTML = docs.length ? docs.map((item) => `<option value="${escapeHtml(item.file)}">${escapeHtml(item.label)}</option>`).join("") : '<option value="">暂无文档</option>';
     nodes.documentSelect.disabled = !docs.length;
@@ -340,7 +346,6 @@ import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mj
     if (docs.some((item) => item.file === file)) nodes.documentSelect.value = file;
     else { nodes.documentSelect.insertAdjacentHTML("afterbegin", `<option value="">${escapeHtml(DOC_LABELS[state.docKey] || "文档")} · 待补充</option>`); nodes.documentSelect.value = ""; }
     const hasEntry = !!state.entry;
-    const pages = state.entry?.pageDesigns?.length || 0;
     const designCount = state.entry?.design?.pages?.length || 0;
     const sourceCount = state.entry?.prototypes?.length || 0;
     const flow = state.entry?.flow;
@@ -350,8 +355,7 @@ import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mj
       { key: "spec", label: "规格", status: state.entry?.docs?.spec ? "已收录" : "待补充", available: !!state.entry?.docs?.spec },
       { key: "requirement", label: "需求", status: state.entry?.docs?.requirement ? "已收录" : "待补充", available: !!state.entry?.docs?.requirement },
       { key: "flow", label: "流程", status: flow?.applicability === "not-needed" ? "无需" : flowCount ? `${flowCount} 张图` : "可选", available: !!flowCount, optional: true },
-      { key: "page", label: "页面", status: pages ? `${pages} 份说明` : "待补充", available: !!pages },
-      { key: "design", label: "设计", status: designCount ? `${designCount} 个画板` : sourceCount ? `${sourceCount} 份原型` : "待设计", available: !!(designCount || sourceCount) },
+      { key: "design", label: "设计", status: designCount ? `${designCount} 个页面` : sourceCount ? `${sourceCount} 份原型` : "待设计", available: !!(designCount || sourceCount) },
       { key: "contract", label: "接口", status: state.entry?.docs?.contract ? "已收录" : "待补充", available: !!state.entry?.docs?.contract },
     ];
     stages.push({key:"test",label:"测试",status:"",available:true});
@@ -407,10 +411,7 @@ import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mj
     if(p!==state.selectedPath)return;
     state.file=file;state.editNewDocumentPath=p;await refreshEntrySummary();setHash();await loadCurrentDocument();
   }
-  const pageDocumentDialog=document.createElement('dialog');pageDocumentDialog.className='document-version-dialog page-document-dialog';pageDocumentDialog.innerHTML='<form><div class="dialog-heading"><h2>新增页面说明</h2></div><label for="pageDocumentName">页面名称</label><input id="pageDocumentName" class="document-page-name" required maxlength="97" autocomplete="off"><p role="alert" class="document-dialog-error"></p><div class="dialog-actions"><button type="button" class="button" data-cancel>取消</button><button type="submit" class="button button-primary primary">创建</button></div></form>';document.body.append(pageDocumentDialog);
-  pageDocumentDialog.querySelector('[data-cancel]').onclick=()=>pageDocumentDialog.close();
-  pageDocumentDialog.querySelector('form').onsubmit=async event=>{event.preventDefault();const name=pageDocumentDialog.querySelector('input').value.trim().replace(/\.md$/i,'');const error=pageDocumentDialog.querySelector('[role=alert]'),submit=pageDocumentDialog.querySelector('[type=submit]');error.textContent='';if(!name||name.startsWith('.')||/[\\/<>:"|?*\u0000-\u001f]/.test(name)){error.textContent='请输入有效的页面名称';return}submit.disabled=true;try{await createDocument(state.selectedPath+'/页面设计/'+name+'.md',name);pageDocumentDialog.close();documentEditor.focus()}catch(e){error.textContent=e.message}finally{submit.disabled=false}};
-  document.getElementById('newPageDocumentButton').onclick=async()=>{if(!await canNavigate())return;pageDocumentDialog.querySelector('form').reset();pageDocumentDialog.querySelector('[role=alert]').textContent='';pageDocumentDialog.showModal();pageDocumentDialog.querySelector('input').focus()};
+
   function buildOutline() {
     const headingIds = new Set();
     [...nodes.docContent.querySelectorAll("h1,h2,h3,h4,h5,h6")].forEach((heading, index) => {
@@ -454,6 +455,7 @@ import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mj
     try {
       const payload = await fetchJson(`/api/doc?path=${encodeURIComponent(entryPath)}&file=${encodeURIComponent(file)}`);
       if (token !== state.docRequestToken || state.selectedPath !== entryPath || state.activeView !== "doc") return;
+      if(payload.redirect){history.replaceState(null,'',payload.redirect);loadHash();await openEntry(entryPath,{fromHash:true,guarded:true});return;}
       nodes.docEyebrow.textContent = label;
       nodes.docEyebrow.title = payload.file || file;
       nodes.docTitle.textContent = payload.title || state.entry.feature;
@@ -490,7 +492,7 @@ import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mj
     nodes.previewEmpty.innerHTML = `<div class="empty-content">${icon("frame")}<strong>${escapeHtml(message)}</strong><div class="empty-actions">${retry ? '<button type="button" class="button" data-retry-preview>重新加载</button>' : ""}<a class="button button-primary" href="${escapeHtml(designUrl())}">编辑设计</a></div></div>`;
   }
   function getPreviewItems() {
-    return [...(state.entry?.design?.pages || []).map((page) => ({ ...page, path: `design:${page.id}`, type: "design", updatedAt: state.entry.design.updatedAt })), ...(state.entry?.prototypes || [])];
+    return [...(state.entry?.design?.pages || []).filter(page=>page.status!=='planned').map((page) => ({ ...page, path: `design:${page.id}`, type: "design", updatedAt: state.entry.design.updatedAt })), ...(state.entry?.prototypes || [])];
   }
   function previewNavigationConfig() {
     return {origin:location.origin,entryPath:state.selectedPath,pages:(state.entry?.design?.pages||[]).map(({id,source})=>({id,source})),sources:(state.entry?.prototypes||[]).map(item=>item.path)};

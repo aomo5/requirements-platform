@@ -174,7 +174,7 @@ test("raw added HTML is stamped before validation and dry-run output can be appl
 test("the larger batch envelope retains separate design and annotation capacity limits", async () => {
   const db = fixture(), before = clone(db.state), design = payload(db);
   design.dryRun = true;
-  for (let i = 0; i < 8; i++) design.pages.push(page("large-" + i, "<div>" + "x".repeat(550000) + "</div>"));
+  for (let i = 0; i < 16; i++) design.pages.push(page("large-" + i, "<div>" + "x".repeat(550000) + "</div>"));
   await assert.rejects(saveDesignBatch(db, topic, design), { status: 413 });
   const annotations = payload(db); annotations.dryRun = true;
   for (let i = 0; i < 140; i++) annotations.notes.push(note("large-note-" + i, annotations.pages[0], "x".repeat(8000)));
@@ -182,7 +182,7 @@ test("the larger batch envelope retains separate design and annotation capacity 
   assert.deepEqual(db.state, before); assert.equal(db.putCalls, 0);
 });
 
-test("HTTP endpoint enforces owner, same-origin, client header, JSON and a local 6 MB limit", async () => {
+test("HTTP endpoint enforces owner, same-origin, client header, JSON and a local 12 MB limit", async () => {
   const db = fixture();
   async function call({ database = db, method = "POST", route = "/api/design/batch", canWrite = true, headers = {}, body = payload(db), raw } = {}) {
     const request = Readable.from([Buffer.from(raw === undefined ? JSON.stringify(body) : raw)]);
@@ -196,7 +196,7 @@ test("HTTP endpoint enforces owner, same-origin, client header, JSON and a local
   assert.equal((await call({ headers: { "x-design-client": "" } })).status, 403);
   assert.equal((await call({ headers: { "content-type": "text/plain" } })).status, 415);
   assert.equal((await call({ raw: "{" })).status, 400);
-  assert.equal((await call({ raw: " ".repeat(6 * 1024 * 1024 + 1) })).status, 413);
+  assert.equal((await call({ raw: " ".repeat(12 * 1024 * 1024 + 1) })).status, 413);
   assert.equal((await call({ raw: " ".repeat(4 * 1024 * 1024) + JSON.stringify(payload(db)) })).status, 200);
   assert.equal((await call({ database: null })).status, 501);
   const read = await call({ method: "GET", route: "/api/design/bundle", canWrite: false });

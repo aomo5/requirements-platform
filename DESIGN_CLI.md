@@ -47,12 +47,14 @@ npm run design -- rules --path '01-协作工具/知识库投稿'
 [
   {"op":"element.text","pageId":"article-detail","id":"el-真实UUID","index":0,"expected":"提交","value":"确认提交"},
   {"op":"element.style","pageId":"article-detail","id":"el-真实UUID","property":"color","value":"#1677ff"},
-  {"op":"page.update","id":"article-detail","set":{"name":"订单详情","width":1440}},
+  {"op":"workspace.update","set":{"overview":"作者投稿后进入编辑审核。"}},
+  {"op":"page.update","id":"article-detail","set":{"description":"展示标题、摘要和审核状态。"}},
   {"op":"note.update","id":"submit-note","set":{"text":"检查必填字段后提交"}}
 ]
 ```
 
-- `page.add/update/remove`：按 `id` 操作，新增用 `value`，更新用 `set`、可选 `unset`。可改名称、尺寸、位置、HTML、source、route、platform、group；ID 和基线版本不允许直接修改。
+- `workspace.update` 用 `set.overview` 更新设计总说明。
+- `page.add/update/remove` 按 `id` 操作。新增用 `value`，更新用 `set` 和可选 `unset`。`description` 保存页面说明，`descriptionPageId` 指定共用说明的页面，`status: "planned"` 登记待设计页面。
 - `element.text`：只改指定直接子文本槽位，`index/expected` 必须匹配，保留子元素及脚本。动态生成且不在源 HTML 的元素应修改原型渲染逻辑。
 - `element.style`：支持字号、字重、行高、颜色、文字对齐、背景色、边框颜色/宽度/样式/圆角、四边内边距、gap、width、height。设置内联 `!important`，空字符串清除属性；常见字面长度、颜色和枚举可用，复杂 CSS 用 HTML 编辑。
 - `note.add/update/remove`：仅改页面元素说明，流程说明原样保留。快捷 `note` 自动构造稳定锚点并保留既有需求关联。`note.update` 的 `set.requirements` 可维护关联，从 `rules` 读取当前 `file/blockId/quote/heading`，不要编造 ID。
@@ -91,7 +93,7 @@ npm run design -- link --path '01-协作工具/知识库投稿' --page article-d
 ## 接口与测试
 
 - `GET /api/design/bundle?path=...` 同事务读取设计、说明、流程页面引用。
-- `POST /api/design/batch?path=...` 接受 `expectedRevision,expectedAnnotationsRevision,pages,notes,dryRun?`，复用同源、登录及需求创建者权限。请求限 6 MB，各资源原有限制保持不变。
+- `POST /api/design/batch?path=...` 接受 `expectedRevision`、`expectedAnnotationsRevision`、`pages`、`notes` 及可选 `overview`、`dryRun`。沿用同源、登录及需求创建者权限，请求上限为 12 MB。
 - `npm run test:design-cli`：CLI、模型和事务边界测试。
 - `WORKBENCH_DESIGN_BATCH_DB_TEST=1 node --test tests/design-batch.test.js`：真实测试库随机前缀，仅清理本次前缀。
 - `WORKBENCH_EXPORT_BROWSER_TEST=1 node --test --test-name-pattern='installed Chrome' tests/design-export.test.js`：既有 Chrome 渲染 PNG/JPG/PDF 检查。
