@@ -1,0 +1,5 @@
+version: 1
+interface:
+  display_name: 任务拆分
+  short_description: 将 PRD 拆成带原型前后端标签的研发任务
+  default_prompt: 使用这个 skill 将已确认的需求文档或 PRD 拆分为结合当前仓库结构的任务清单，先按业务交付单元拆分，再标注原型、前端、后端、联调、测试、上线等任务类型，并补充实施顺序与验证清单。

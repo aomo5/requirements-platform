@@ -1,0 +1,4 @@
+interface:
+  display_name: "接口契约"
+  short_description: "为产品需求生成前后端接口契约、Mock数据和评审清单"
+  default_prompt: "Use $interface-contract to draft a frontend-backend API contract for this requirement."

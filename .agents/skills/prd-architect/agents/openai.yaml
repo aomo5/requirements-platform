@@ -1,0 +1,5 @@
+﻿version: 1
+interface:
+  display_name: Product Requirements
+  short_description: Draft and improve PRDs and requirement docs
+  default_prompt: Use this skill to structure, challenge, and draft product requirements with clear scope, business rules, and acceptance criteria.

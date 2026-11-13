@@ -1,0 +1,4 @@
+interface:
+  display_name: "工作台设计系统"
+  short_description: "结合 Figma 编辑器语言与 Ant 规范方法，统一视觉、组件状态和连续操作"
+  default_prompt: "使用 $workbench-design-system 检查当前工作台，按现有规范优化受影响组件和操作衔接。"

@@ -1,6 +1,6 @@
 # 流程 CLI
 
-流程的日常读取、改图、移动节点、维护泳道和说明使用 CLI；浏览器用于最终画布检查。CLI 连接现有本机服务，复用数据库、创建者权限与历史记录，不直接写 SQL、不修改迁移前 JSON。
+流程的日常读取、改图、移动节点、维护泳道和说明使用 CLI；浏览器用于最终画布检查。CLI 连接已运行的工作台服务，复用数据库、创建者权限与历史记录，不直接写 SQL、不修改迁移前 JSON。
 
 在仓库根目录运行 `npm run flow -- help`。
 
@@ -20,10 +20,10 @@ npm run flow -- whoami
 流程页的「路线核验」和 CLI 共用同一份已保存的流程。默认清单从业务入口出发，为可达分支、模块返回、跨图交接和终点选择完整路线。切换到全部组合可以按序号访问任意一条有界路径。循环保留首轮、一次重入与仍待继续的结果。
 
 ```sh
-node scripts/flows.js routes --path '20-收费管理/充电订单全链路核验' --limit 10
-node scripts/flows.js routes --path '20-收费管理/充电订单全链路核验' --view all --offset 10 --detail
-node scripts/flows.js routes --path '20-收费管理/充电订单全链路核验' --mode current --review pending --test pending
-node scripts/flows.js routes --path '20-收费管理/充电订单全链路核验' --changes
+node scripts/flows.js routes --path '01-协作工具/知识库投稿' --limit 10
+node scripts/flows.js routes --path '01-协作工具/知识库投稿' --view all --offset 0 --detail
+node scripts/flows.js routes --path '01-协作工具/知识库投稿' --mode current --review pending --test pending
+node scripts/flows.js routes --path '01-协作工具/知识库投稿' --changes
 ```
 
 页面列表从 1 编号，CLI 的 `--offset` 从 0 起。用 `--through`、`--node` 或 `--rule` 定位经过某流程、节点或已登记业务条件的完整路线。`review` 是个人结论，`test` 取受控业务实测证据。需求目录的 `路线核验规则.json` 记录源码基线、方法、场景断言和互斥条件。本地测试资料单列在场景详情。代码或图上的条件发生变化时，保留原版本记录，当前路线需重新核验。
@@ -31,8 +31,8 @@ node scripts/flows.js routes --path '20-收费管理/充电订单全链路核验
 ## 批量编辑
 
 ```sh
-node scripts/flows.js pull --path '20-收费管理/充电订单全链路核验' --out /tmp/flow-draft.json
-node scripts/flows.js show --file /tmp/flow-draft.json --flow target-co6718-overview --node notify
+node scripts/flows.js pull --path '01-协作工具/知识库投稿' --out /tmp/flow-draft.json
+node scripts/flows.js show --file /tmp/flow-draft.json --flow article-review --node review
 node scripts/flows.js patch --file /tmp/flow-draft.json --ops /tmp/flow-ops.json
 node scripts/flows.js check --file /tmp/flow-draft.json
 node scripts/flows.js diff --file /tmp/flow-draft.json
@@ -46,9 +46,9 @@ node scripts/flows.js apply --file /tmp/flow-draft.json
 
 ```json
 [
-  {"op":"node.update","flowId":"main","id":"notify","set":{"label":"通知与原策略重试","x":200,"y":300}},
-  {"op":"edge.update","flowId":"main","id":"edge-one","set":{"label":"已核实的条件","trace":"proposal"}},
-  {"op":"note.add","id":"note-notify","value":{"target":{"type":"flow-node","flowId":"main","nodeId":"notify"},"text":"方法依据与当前实现状态。","requirements":[]}}
+  {"op":"node.update","flowId":"article-review","id":"review","set":{"label":"文章是否通过审核？"}},
+  {"op":"edge.update","flowId":"article-review","id":"review-published","set":{"label":"审核通过","trace":"proposal"}},
+  {"op":"note.add","id":"note-review","value":{"target":{"type":"flow-node","flowId":"article-review","nodeId":"review"},"text":"编辑确认内容符合发布规则后才发布。","requirements":[]}}
 ]
 ```
 
@@ -101,24 +101,24 @@ node scripts/flows.js apply --file /tmp/flow-draft.json
 
 ```json
 {
-  "id": "close-original",
+  "id": "validate-content",
   "type": "call",
-  "label": "安全收尾原订单",
+  "label": "校验投稿内容",
   "x": 200,
   "y": 300,
   "call": {
-    "entryPath": "20-收费管理/充电订单全链路核验",
-    "flowId": "safe-close",
+    "entryPath": "01-协作工具/知识库投稿",
+    "flowId": "content-validation",
     "nodeId": "entry",
     "returns": [
-      {"outputNodeId": "closed", "targetNodeId": "completed"},
-      {"outputNodeId": "pending", "targetNodeId": "track-original"}
+      {"outputNodeId": "valid", "targetNodeId": "submit-for-review"},
+      {"outputNodeId": "invalid", "targetNodeId": "correct-submission"}
     ]
   }
 }
 ```
 
-示例中的 `closed/pending` 是公共模块内的 `return` 节点；`completed/track-original` 是调用方当前图内的节点。必须同时维护 `close-original → completed` 和 `close-original → track-original` 两条业务连线。`workspace.references` 仍只负责流程列表关联，不代表模块调用。
+假设在示例需求中新增公共模块 `content-validation`，`valid` 和 `invalid` 是模块内的 `return` 节点。`submit-for-review` 和 `correct-submission` 是调用方的接收节点。调用节点需要分别连到这两个接收节点。`workspace.references` 仍只负责流程列表关联，不代表模块调用。
 
 ### 公共定时流程的关联
 

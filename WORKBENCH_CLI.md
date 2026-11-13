@@ -52,7 +52,7 @@ workbench interface version --path '01-通用需求/功能名称' --revision 1 -
 
 `check` 是本地格式/大小检查；`apply --dry-run` 通过同一服务端保存逻辑做事务预演后回滚，不留历史。正式保存会回读核验，冲突退出 3，重新 pull 合并。若写入结果不确定，先回读，不自动重放。若服务确认保存但本地草稿在请求期间又被修改，会保留本地新内容并报告 `saved:true, verified:false, localBaselineUpdated:false`。
 
-新建需求使用 `workbench requirement create --module '20-收费管理' --name '功能名称' --content original.md`，沿用工作台创建逻辑、归属和原始需求长度限制，不自动向 Gitee 发布。原有 Gitee 同步仍单独按其授权执行。
+新建需求使用 `workbench requirement create --module '01-通用需求' --name '功能名称' --content original.md`，沿用工作台创建逻辑、归属和原始需求长度限制，不自动向 Gitee 发布。原有 Gitee 同步仍单独按其授权执行。
 
 ## 测试
 

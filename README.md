@@ -56,6 +56,10 @@ npm run db:init
 - [流程 CLI](./FLOW_CLI.md)和[设计 CLI](./DESIGN_CLI.md)支持导出草稿、差异比较、预演和保存。批量写入需 MySQL。
 - [外部接入](./INTEGRATIONS.md)介绍 Gitee 企业版同步和 Apifox 运行环境配置。
 
+## AI 使用指南
+
+在 Codex 中打开本仓库，即可使用 `.agents/skills/` 中的项目技能。指南包含技能选择、工作台连接和「知识库投稿」示例。 [开始使用 AI](./AI_GUIDE.md)
+
 ## 数据迁移
 
 已有文件模式工作区时，停止工作台，确认 `REQUIREMENTS_ROOT` 和目标 MySQL 配置，使用一个全新的备份目录。示例 `.runtime/backup-before-mysql` 位于默认需求数据目录之外。
