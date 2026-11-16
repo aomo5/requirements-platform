@@ -1,9 +1,5 @@
 # 外部接入
 
-## Gitee 企业版
-
-在 MySQL 模式的 `.env` 中加入 `GITEE_SYNC_ENABLED=true`。维护者先通过本机的工作台「设置」填写企业、项目和 API 凭据，再启用团队账号模式。同步前可以比较本地和远端版本，明确选择拉取、推送或新建。同步凭据写入 `.secrets/`，也可由维护者通过 `GITEE_SECRET_FILE` 指定文件。
-
 ## Apifox
 
 在 MySQL 模式下安装 Apifox CLI，由运行工作台的账号完成 CLI 登录。在 `.env` 中将 `APIFOX_CLI_PATH` 指向 CLI 的 `bin/cli.js`，将受控环境写入 `.secrets/apifox-executor.json`。配置路径可通过 `APIFOX_EXECUTOR_CONFIG` 修改。

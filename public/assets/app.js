@@ -1,6 +1,5 @@
 import {createTestUI} from './test-module.js';
 import { mountAccount } from './accounts.js';
-import {createGiteeSyncUI} from "./gitee-sync.js";
 import { statusIndicator, controlHint, icon as workbenchIcon, iconButton, iconButtons } from "./workbench-icons.js";
 import {createWorkspaceHost, workspaceHashFromUrl} from "./workspace-bridge.js";
 import {createRequirementLinks} from "./requirement-links.js";
@@ -24,7 +23,7 @@ import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mj
     searchCollapsedModules: new Set(), treeScrollBeforeSearch: 0, outlineHidden: false, designNavigation: false, designReturn: null,
   };
   const nodes = {};
-  for (const id of ["toggleDesignNavigation", "treeContainer", "treeMeta", "searchInput", "createEntryButton", "toggleArchivedButton", "archivedToggleLabel", "archivedCount", "documentSelect", "openDesignLink", "toggleOutlineButton", "docWorkspace", "previewWorkspace", "docStatus", "docOutline", "docEyebrow", "docTitle", "downloadDocLink", "docContent", "prototypeList", "previewFrame", "previewImage", "previewLabel", "previewEmpty", "openPreviewLink", "editPreviewLink", "annotationPreviewLink", "entryModule", "entryTitle", "entryGiteeLink", "entryGiteeStatus", "flowNavigation", "designSummary", "previewStage", "editorWorkspace", "editorFrames", "workspaceSaveState", "workspaceNotice", "designModeSwitch"]) nodes[id] = document.getElementById(id);
+  for (const id of ["toggleDesignNavigation", "treeContainer", "treeMeta", "searchInput", "createEntryButton", "toggleArchivedButton", "archivedToggleLabel", "archivedCount", "documentSelect", "openDesignLink", "toggleOutlineButton", "docWorkspace", "previewWorkspace", "docStatus", "docOutline", "docEyebrow", "docTitle", "downloadDocLink", "docContent", "prototypeList", "previewFrame", "previewImage", "previewLabel", "previewEmpty", "openPreviewLink", "editPreviewLink", "annotationPreviewLink", "entryModule", "entryTitle", "flowNavigation", "designSummary", "previewStage", "editorWorkspace", "editorFrames", "workspaceSaveState", "workspaceNotice", "designModeSwitch"]) nodes[id] = document.getElementById(id);
   nodes.layout = document.querySelector(".layout");
   nodes.documentStage = document.querySelector(".document-stage");
   for (const id of ["flowWorkspace", "flowList", "flowSummary", "flowStage", "flowEmpty", "flowFrame", "flowTitle", "flowSourceLabel", "flowApplicability", "openFlowLink", "openSourceFlowLink", "newFlowLink", "linkFlowLink", "flowCatalogNotice"]) nodes[id] = document.getElementById(id);
@@ -68,7 +67,6 @@ import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mj
       flow: state.activeView === 'flow' ? state.selectedFlowId : '',
       source: state.selectedFlowSource || state.selectedPath,
     } : null });
-  const giteeSyncUI=createGiteeSyncUI({getPath:()=>state.selectedPath,onChanged:async()=>{await loadTree();await refreshEntrySummary();renderContentControls();if(state.activeView==='doc')await loadCurrentDocument();}});
   createEntryUI({button:nodes.createEntryButton,getModules:()=>state.tree?.modules || [],getModule:()=>state.entry?.module,
     beforeCreate:canNavigate,onCreated:async entry=>{
       state.editNewDocumentPath=entry.path; state.filterText=''; nodes.searchInput.value=''; state.activeView='doc'; state.docKey='requirement';
@@ -243,21 +241,19 @@ import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mj
     const modules = state.tree?.modules || [];
     const allCount = getAllEntries().length;
     nodes.treeMeta.textContent = `${allCount} 项需求`;
-    nodes.treeMeta.title = `目录更新 ${formatDate(state.tree?.generatedAt)} · Gitee 同步 ${formatDate(state.tree?.giteeStatusSyncedAt)}`;
+    nodes.treeMeta.title = `目录更新 ${formatDate(state.tree?.generatedAt)}`;
     updateArchiveControls();
     let visibleCount = 0;
     nodes.treeContainer.innerHTML = modules.map((moduleNode) => {
-      const features = (moduleNode.features || []).filter((feature) => (state.showArchived || !state.archivedPaths.has(feature.path)) && (!filter || [feature.path, feature.feature, feature.gitee?.ident, feature.gitee?.label, feature.writingStatus?.label].join(" ").toLowerCase().includes(filter)));
+      const features = (moduleNode.features || []).filter((feature) => (state.showArchived || !state.archivedPaths.has(feature.path)) && (!filter || [feature.path, feature.feature, feature.writingStatus?.label].join(" ").toLowerCase().includes(filter)));
       if (!features.length) return "";
       visibleCount += features.length;
       const collapsed = (filter ? state.searchCollapsedModules : state.collapsedModules).has(moduleNode.module);
       return `<section class="menu-section${collapsed ? " collapsed" : ""}"><button class="menu-section-title" data-module-name="${escapeHtml(moduleNode.module)}" type="button" aria-expanded="${!collapsed}"><span class="menu-section-heading"><span class="menu-chevron" aria-hidden="true">${workbenchIcon('next')}</span><span>${escapeHtml(moduleNode.module)}</span></span><span class="module-count">${features.length}</span></button><div class="menu-section-body${collapsed ? " hidden" : ""}">${features.map((feature) => {
         const archived = state.archivedPaths.has(feature.path);
-        const gitee = feature.gitee || {};
-        const label = gitee.ident ? `${gitee.ident} · ${gitee.label || "待同步"}` : "Gitee 未关联";
         const written = Boolean(feature.docs?.requirement);
         const writingLabel = written ? "需求文档已写" : "需求文档待写";
-        return `<div class="menu-item-row${archived ? " archived" : ""}"><button class="menu-item${feature.path === state.selectedPath ? " active" : ""}" data-entry-path="${escapeHtml(feature.path)}" type="button" aria-label="${escapeHtml(`${feature.feature}，${label}，${writingLabel}`)}"${feature.path === state.selectedPath ? ' aria-current="page"' : ""}><strong>${escapeHtml(feature.feature)}</strong><span class="menu-item-meta"><span class="status-dot status-${escapeHtml(gitee.state || "unlinked")}" aria-hidden="true"></span><span>${escapeHtml(label)}</span><span class="writing-state wb-status-icon" role="img" aria-label="${writingLabel}" data-tooltip="${writingLabel}" data-tooltip-on-focus>${workbenchIcon(written ? "documentCheck" : "documentEmpty")}</span></span></button><button class="archive-button icon-button" data-archive-path="${escapeHtml(feature.path)}" type="button" ${(feature.canEdit ?? state.tree?.canArchive) ? "" : "disabled"} title="${(feature.canEdit ?? state.tree?.canArchive) ? (archived ? "取消归档" : "归档") : "当前连接为只读"}" aria-label="${archived ? "取消归档" : "归档"}${escapeHtml(feature.feature)}">${icon(archived ? "restore" : "archive")}</button></div>`;
+        return `<div class="menu-item-row${archived ? " archived" : ""}"><button class="menu-item${feature.path === state.selectedPath ? " active" : ""}" data-entry-path="${escapeHtml(feature.path)}" type="button" aria-label="${escapeHtml(`${feature.feature}，${writingLabel}`)}"${feature.path === state.selectedPath ? ' aria-current="page"' : ""}><strong>${escapeHtml(feature.feature)}</strong><span class="menu-item-meta"><span class="writing-state wb-status-icon" role="img" aria-label="${writingLabel}" data-tooltip="${writingLabel}" data-tooltip-on-focus>${workbenchIcon(written ? "documentCheck" : "documentEmpty")}</span></span></button><button class="archive-button icon-button" data-archive-path="${escapeHtml(feature.path)}" type="button" ${(feature.canEdit ?? state.tree?.canArchive) ? "" : "disabled"} title="${(feature.canEdit ?? state.tree?.canArchive) ? (archived ? "取消归档" : "归档") : "当前连接为只读"}" aria-label="${archived ? "取消归档" : "归档"}${escapeHtml(feature.feature)}">${icon(archived ? "restore" : "archive")}</button></div>`;
       }).join("")}</div></section>`;
     }).join("");
     for (const button of nodes.treeContainer.querySelectorAll('[data-archive-path]')) {
@@ -322,23 +318,10 @@ import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mj
     nodes.entryTitle.disabled = !state.entry || state.entry.path !== state.selectedPath;
     const copyButton = document.getElementById('copyAiButton');
     copyButton.disabled = copyButton.getAttribute('aria-busy') === 'true' || !state.entry || state.entry.path !== state.selectedPath;
-    void giteeSyncUI.refresh();
     renderDesignLinks();
     nodes.entryModule.textContent = state.entry?.module || "需求平台";
     nodes.entryTitle.textContent = state.entry?.feature || (state.selectedPath ? "加载需求…" : "选择需求");
     document.title = state.entry ? `${state.entry.feature} · 需求平台` : "需求平台";
-    const gitee = state.entry?.gitee || {};
-    nodes.entryGiteeLink.classList.add("hidden");
-    nodes.entryGiteeStatus.classList.remove("hidden");
-    nodes.entryGiteeStatus.textContent = state.entry ? `Gitee · ${gitee.label || (gitee.ident ? "待同步" : "未关联")}` : "";
-    nodes.entryGiteeStatus.className = `gitee-status status-${gitee.state || "unlinked"}`;
-    const href = gitee.url || gitee.link;
-    if (href && /^https:\/\//i.test(href)) {
-      nodes.entryGiteeLink.href = href;
-      nodes.entryGiteeLink.textContent = `${gitee.ident || "Gitee"} · ${gitee.label || "待同步"}`;
-      nodes.entryGiteeLink.className = `gitee-status status-${gitee.state || "unlinked"}`;
-      nodes.entryGiteeStatus.classList.add("hidden");
-    }
     const docs = getDocuments();
     nodes.documentSelect.innerHTML = docs.length ? docs.map((item) => `<option value="${escapeHtml(item.file)}">${escapeHtml(item.label)}</option>`).join("") : '<option value="">暂无文档</option>';
     nodes.documentSelect.disabled = !docs.length;

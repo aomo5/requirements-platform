@@ -255,7 +255,6 @@ function handlePublic(response, requestPath) {
   serveFile(response, filePath);
 }
 
-let giteeHandler;
 let entryCreateHandler, documentHandler, designExportHandler, designDocumentsHandler, aiHandler;
 let database = null, designStore, flowStore, annotationStore, designHandler, designBatchHandler, flowHandler, flowBatchHandler, annotationHandler;
 const modeFile = process.env.WORKBENCH_MODE_FILE || path.join(PORTAL_ROOT, ".storage-mode.json");
@@ -290,15 +289,6 @@ async function initialize() {
   flowRouteHandler=await require('./lib/flow-route-service').createRouteService({
     db:database,store:flowStore,root:REQUIREMENTS_ROOT,tests,accessMode:DESIGN_ACCESS,sendJson,
   });
-  const { createGiteeHandler } = require("./lib/gitee-handler");
-  let sync = null;
-  if (database && process.env.GITEE_SYNC_ENABLED === "true") {
-    const { GiteeStore } = require("./lib/gitee-store");
-    const { GiteeSync } = require("./lib/gitee-sync");
-    const store = new GiteeStore(database); await store.init(); await store.recover();
-    sync = new GiteeSync({root:REQUIREMENTS_ROOT,store,getTree:currentTree,documents:database,secretFile:process.env.GITEE_SECRET_FILE || path.join(PORTAL_ROOT,".secrets/gitee-token")});
-  }
-  giteeHandler = createGiteeHandler(sync,sendJson,accounts);
   designHandler = createDesignHandler(designStore, sendJson, { accessMode: DESIGN_ACCESS });
   designExportHandler = createDesignExportHandler(designStore, { root: REQUIREMENTS_ROOT, publicRoot: PUBLIC_ROOT, sendJson });
   flowHandler = createFlowHandler(flowStore, sendJson, { accessMode: DESIGN_ACCESS });
@@ -381,14 +371,12 @@ const server = http.createServer(async (request, response) => {
       if(requestPath==='/api/entry-state/import') {sendJson(response,403,{error:'账号模式不支持批量导入旧归档状态'});return;}
       const canWrite=p ? await accounts.owns(p,user) : creating || requestPath==='/api/tree';
       request.accountAccess={user,canEdit:canWrite};
-      // Unknown/global writes fail closed. Gitee validates every target after reading its body.
-      if(!['GET','HEAD'].includes(request.method) && !requestPath.startsWith('/api/gitee/') && !canWrite) {
+      // Unknown/global writes fail closed.
+      if(!['GET','HEAD'].includes(request.method) && !canWrite) {
         sendJson(response,403,{error:'只有需求创建者可以修改此需求'});return;
       }
     }
     if (requestPath.startsWith("/api/ai/")) { await aiHandler(request, response, requestUrl); return; }
-
-    if (requestPath.startsWith("/api/gitee/")) { await giteeHandler(request,response,requestUrl); return; }
 
     if (requestPath === "/api/storage/health" && request.method === "GET") {
       if (database) await database.pool.query("SELECT 1");

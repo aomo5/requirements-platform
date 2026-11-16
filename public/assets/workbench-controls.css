@@ -91,7 +91,7 @@ body .element-value .element-reset.wb-icon-button:focus-visible {outline-offset:
 
 /* Dialogs keep stable headers, aligned actions and scrollable content. */
 body dialog {max-width:calc(100vw - 32px);border-color:var(--wb-border);border-radius:var(--wb-radius-overlay);box-shadow:var(--wb-shadow-overlay);overscroll-behavior:contain;scroll-padding:16px;color:var(--wb-text-primary)}
-body dialog:not(.preview-dialog):not(.element-notes-dialog):not(.gitee-dialog) {padding:20px}
+body dialog:not(.preview-dialog):not(.element-notes-dialog) {padding:20px}
 body dialog::backdrop {background:#1a1a1a59}
 body dialog .dialog-heading {min-height:32px;height:auto;gap:16px;margin-bottom:16px}
 body dialog .dialog-heading h2 {min-width:0;margin:0;font:500 13px/20px var(--wb-font-family);overflow-wrap:anywhere}
@@ -111,9 +111,6 @@ body .shortcut-list dd {max-width:58%;line-height:20px;text-align:right;overflow
 body .version-row {gap:16px;padding:12px 0}
 body .version-row>span {min-width:0;overflow-wrap:anywhere}
 body .version-row button {flex-shrink:0}
-body .gitee-dialog header,body .gitee-dialog footer {padding:12px 16px;gap:8px}
-body .gitee-dialog header {min-height:56px}
-body .gitee-dialog input[readonly] {background:var(--wb-bg-subtle)}
 
 /* Preview tools wrap as groups, with the remaining height given to the page. */
 body .preview-dialog[open] {display:flex;flex-direction:column;padding:0;overflow:hidden}
@@ -170,7 +167,6 @@ body .canvas-dock .canvas-hint:empty{display:none}
 .sider .search-control:focus-within{border-color:var(--wb-border-focus);box-shadow:inset 0 0 0 1px var(--wb-border-focus);background:var(--wb-bg-surface)}
 .sider .sider-controls{height:44px;gap:8px;padding:0}
 .sider .sider-controls #treeMeta{margin-right:auto;white-space:nowrap;font-variant-numeric:tabular-nums}
-.sider #giteeBatchButton{height:28px;min-height:28px;padding:3px 8px;font-size:11px}
 .sider .requirement-menu{padding:0 8px 8px;overscroll-behavior:contain;scrollbar-gutter:stable;scroll-padding-block:4px}
 .sider .menu-section+.menu-section{margin-top:4px}
 .sider .menu-section-title{height:32px;border-radius:0;padding:0 8px;font-size:12px;font-weight:400}

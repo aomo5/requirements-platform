@@ -2,7 +2,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {prepareMarkdown}=require('../lib/stable-identities'),{stripMarkers,reconcileDocument}=require('../lib/document-storage');
 const {scanRequirements}=require('../lib/scan'),{MysqlStorage}=require('../lib/mysql-storage'),{backup,TABLES}=require('../lib/storage-transfer'),{databaseConfig}=require('../lib/storage-config');
-const {GiteeSync}=require('../lib/gitee-sync');
 const {fixture}=require('./document-fixture');
 
 test('plain editor preserves paragraph and table identities through text changes and reordering',()=>{
@@ -23,7 +22,7 @@ test('plain editor preserves paragraph and table identities through text changes
 
 });
 
-test('real MySQL migration, canonical saves, conflicts, history and Gitee preserve existing notes and files',async()=>{
+test('real MySQL migration, canonical saves, conflicts, and history preserve existing notes and files',async()=>{
  const f=await fixture();try{
   const {db,p,dir,root,content}=f;
   await db.rules(p);const old=(await db.rules(p)).rules;
@@ -45,8 +44,6 @@ test('real MySQL migration, canonical saves, conflicts, history and Gitee preser
    assert.equal(JSON.stringify((await db.read('annotations',p)).workspace),before);
    assert.equal(JSON.stringify((await db.read('design',p)).workspace),beforeDesign);
    const tree=await db.decorateTree(scanRequirements(root));assert.equal(tree.modules[0].features[0].document.storage,'mysql');
-   const memory={get:async()=>null};const sync=new GiteeSync({root,store:memory,getTree:()=>scanRequirements(root),secretFile:path.join(root,'secret'),documents:db});
-   assert.ok((await sync.local(p)).body.includes('充值仅进入选定账户。'));assert.ok(!(await sync.local(p)).body.includes('不能覆盖数据库'));
    const restored=await db.saveDocument(p,saved.revision,(await db.documentVersion(p,canonical.revision)).content);assert.ok(restored.revision>saved.revision);assert.equal(restored.content,content);
    fs.unlinkSync(path.join(dir,'需求文档.md'));fs.unlinkSync(path.join(dir,'规格索引.md'));
    const discovered=await db.decorateTree(scanRequirements(root));assert.equal(discovered.modules[0].features[0].path,p);assert.equal((await db.document(p)).content,content);

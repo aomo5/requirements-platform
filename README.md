@@ -5,7 +5,7 @@
 - **需求与规格**支持 Markdown、规则段落锚点，以及 MySQL 模式下的在线编辑和版本恢复。
 - **流程图**支持连线、泳道、子流程、公共模块、节点参数契约和 Mermaid 导入与导出。
 - **设计**集中维护页面目录、页面说明、画板和需求关联。支持待设计页面、多状态共用说明、HTML 原型导入，以及 HTML、PNG、JPG 或 PDF 导出。
-- **协作**支持团队账号、需求创建者权限、统一 CLI 和 AI 只读上下文。Gitee 企业版与 Apifox 可按需接入。
+- **协作**支持团队账号、需求创建者权限、统一 CLI 和 AI 只读上下文。可按需接入 Apifox。
 
 ## 本地启动
 
@@ -54,7 +54,7 @@ npm run db:init
 
 - [统一 CLI](./WORKBENCH_CLI.md)用于需求、接口、规格、页面说明和测试关联。
 - [流程 CLI](./FLOW_CLI.md)和[设计 CLI](./DESIGN_CLI.md)支持导出草稿、差异比较、预演和保存。批量写入需 MySQL。
-- [外部接入](./INTEGRATIONS.md)介绍 Gitee 企业版同步和 Apifox 运行环境配置。
+- [外部接入](./INTEGRATIONS.md)介绍 Apifox 运行环境配置。
 
 ## AI 使用指南
 

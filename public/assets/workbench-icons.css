@@ -22,7 +22,7 @@
 .wb-icon-tooltip::backdrop{background:transparent;pointer-events:none}
 
 /* Panel actions share one rhythm; canvas tools keep their compact dock. */
-.page-primary-actions,.page-secondary-actions,.page-list-actions,.sider-title-actions,.preview-actions,.top-actions,#historyActions,#flowHistoryActions,.element-notes-actions,.element-notes-edit-actions,.notes-detail-actions,.node-actions,.flow-object-actions,.dialog-heading>div,.mermaid-toolbar>div{display:flex;align-items:center;gap:var(--wb-space-2)}
+.page-primary-actions,.page-secondary-actions,.page-list-actions,.preview-actions,.top-actions,#historyActions,#flowHistoryActions,.element-notes-actions,.element-notes-edit-actions,.notes-detail-actions,.node-actions,.flow-object-actions,.dialog-heading>div,.mermaid-toolbar>div{display:flex;align-items:center;gap:var(--wb-space-2)}
 .page-primary-actions{margin-bottom:20px}.page-primary-actions #pageContextActions{display:contents}
 .page-primary-actions .wb-icon-button{margin:0}
 .page-secondary-actions{margin-top:20px;padding-top:16px;border-top:1px solid var(--wb-border)}
