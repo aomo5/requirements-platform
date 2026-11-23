@@ -46,6 +46,8 @@ Write requirements by scenario or module. For each item, specify:
 - System response
 - Edge or exception behavior
 
+For cross-stage reconciliation, include the flow overview with [one worked transaction](../../flow-workbench/references/decision-rules-and-rehearsal.md#对账总览的贯穿样单), or link to the overview that already contains it. Follow the same transaction's identifiers and amounts to the agreed outcome.
+
 ## 7. Business Rules
 
 - Role restrictions

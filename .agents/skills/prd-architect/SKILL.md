@@ -209,7 +209,7 @@ description: 整理和维护正式 PRD 文档。用于将零散需求、会议�
 
 优先用结构化步骤描述主流程。
 
-仅在流程较复杂、分支较多时，再补充 Mermaid 流程图草案。
+流程较复杂、分支较多时，可补充 Mermaid 流程图草案。跨环节对账默认给出业务总览和[一笔贯穿样单](../flow-workbench/references/decision-rules-and-rehearsal.md#对账总览的贯穿样单)。已有工作台总览时，正文引用承载样单的流程。
 
 流程描述需要包含：
 
