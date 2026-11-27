@@ -7,6 +7,7 @@ import { createElementEditor } from "./design-elements.js";
 import { createPageAnnotations } from "./page-annotations.js";
 import { installWorkspaceBridge } from "./workspace-bridge.js";
 import { createDesignExporter } from "./design-export.js";
+import { previewWindowPath } from "./preview-navigation.mjs";
 
 const $ = (id) => document.getElementById(id);
 iconButtons(document, [
@@ -1113,6 +1114,12 @@ function sizePreview() {
   Object.assign($('fullPreview').style,{width:`${page.width}px`,height:`${page.height}px`,transform:`scale(${scale})`});
   $('previewFit').setAttribute('aria-pressed',String(previewMode==='fit'));$('previewActual').setAttribute('aria-pressed',String(previewMode==='actual'));
 }
+function openPreviewWindow(page, frame) {
+  const {name, width, height} = page;
+  // Reuse the dialog's HTML so draft changes and expanded state routes are included.
+  const snapshot = URL.createObjectURL(new Blob([JSON.stringify({name, width, height, html: frame.srcdoc})], {type: 'application/json'}));
+  window.open(`${previewWindowPath}#${new URLSearchParams({snapshot})}`, '_blank', 'noopener,noreferrer');
+}
 function renderPreview() {
   const page=canvasPages().find(p=>p.id===previewId);if(!page)return;
   const index=previewIds.indexOf(page.id);
@@ -1120,6 +1127,8 @@ function renderPreview() {
   $('previewCompare').setAttribute('aria-pressed',String(previewCompare));
   $('previewSurface').hidden=previewCompare;$('previewCompareGrid').hidden=!previewCompare;
   $('previewAnnotationsButton').disabled=previewCompare;
+  $('openPageWindow').hidden = previewCompare;
+  $('openPageWindow').disabled = page.status === 'planned';
   $('previewCompareGrid').replaceChildren();
   if(previewCompare){
     $('previewFit').setAttribute('aria-pressed','false');$('previewActual').setAttribute('aria-pressed','false');
@@ -1128,10 +1137,18 @@ function renderPreview() {
     $('previewTitle').textContent=`并排对比 · ${start+1}—${start+ids.length} / ${previewIds.length}`;
     for(const id of ids){const p=canvasPages().find(item=>item.id===id);if(!p)continue;
       const item=document.createElement('section');item.className='compare-item';item.dataset.page=id;
+      const heading = document.createElement('header'); heading.className = 'compare-heading';
       const title=document.createElement('h3');title.textContent=p.name;
       const surface=document.createElement('div');surface.className='compare-surface';
       const frame=document.createElement('iframe');frame.title=p.name;frame.setAttribute('sandbox','allow-scripts');frame.referrerPolicy='no-referrer';frame.srcdoc=documentHtml(p);
-      surface.append(frame);item.append(title,surface);$('previewCompareGrid').append(item);
+      heading.append(title);
+      if (p.status !== 'planned') {
+        const open = document.createElement('button'); open.type = 'button';
+        iconButton(open, 'external', `新窗口预览「${p.name}」`);
+        open.addEventListener('click', () => openPreviewWindow(p, frame));
+        heading.append(open);
+      }
+      surface.append(frame);item.append(heading,surface);$('previewCompareGrid').append(item);
     }
     $('previousPage').disabled=start===0;$('nextPage').disabled=start+4>=previewIds.length;sizeComparison();return;
   }
@@ -1148,6 +1165,10 @@ async function openPreview() {
   }
   renderPreview();
 }
+$('openPageWindow').addEventListener('click', () => {
+  const page = canvasPages().find(item => item.id === previewId);
+  if (page && page.status !== 'planned') openPreviewWindow(page, $('fullPreview'));
+});
 for(const [id,mode] of [['previewFit','fit'],['previewActual','actual']])$(id).addEventListener('click',()=>{previewCompare=false;previewMode=mode;renderPreview();});
 
 function sizeComparison(){

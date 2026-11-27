@@ -238,6 +238,7 @@ svg { flex: 0 0 auto; width: 16px; height: 16px; fill: none; stroke: currentColo
   .saved-design-preview { padding: 16px; }
   .preview-toolbar { padding: 8px 12px; }
   .preview-actions .button { max-width: 110px; padding: 4px 6px; }
+  #openPreviewLink { min-height: var(--wb-control-touch); }
   .flow-toolbar { flex-wrap: wrap; padding: 8px 12px; gap: 8px; }
   .flow-heading { flex: 1 1 160px; }
   .flow-stage { height: 64vh; min-height: 420px; }

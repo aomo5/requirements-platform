@@ -32,8 +32,8 @@ const prototype = `<!doctype html><html><body>
   </script></body></html>`;
 const fixtures = () => [
   { id: 'origin', name: '账户详情', x: 0, y: 0, width: 390, height: 600, html: prototype, source: '', route: '' },
-  { id: 'next', name: '异步详情', x: 1100, y: 0, width: 390, height: 600, source: '', route: '',
-    html: prototype.replace('</body>', '<script>setTimeout(() => focusAction(false), 80)</script></body>') },
+  { id: 'next', name: '异步详情', x: 1100, y: 0, width: 390, height: 600, source: '', route: '#details',
+    html: prototype.replace('账户详情', '异步详情').replace('</body>', '<script>setTimeout(() => focusAction(false), 80)</script></body>') },
 ];
 
 // Serve the real editor and assets, but keep every API write in this fixture.
@@ -176,5 +176,27 @@ test('prototype autofocus cannot roll back canvas gestures; interactive views re
     const frame = page.frameLocator('.artboard[data-page=origin] iframe');
     await page.locator('body.element-mode').waitFor();
     assert.equal(await frame.locator('body').evaluate(el => el.inert), false);
+  });
+
+  await t.test('a new tab opens the current preview page at its original size', async t => {
+    const { page, server } = await editor(t);
+    await page.locator('#previewButton').click();
+    await page.locator('#nextPage').click();
+    const [tab] = await Promise.all([
+      page.context().waitForEvent('page'),
+      page.getByRole('button', {name: '新窗口预览', exact: true}).click(),
+    ]);
+    const frame = tab.frameLocator('#pagePreviewFrame');
+    await frame.getByRole('heading', {name: '异步详情'}).waitFor();
+    assert.equal(await tab.title(), '异步详情 · 页面预览');
+    assert.deepEqual(await frame.locator('body').evaluate(() => ({
+      route: location.hash, width: innerWidth, height: innerHeight, origin: window.origin,
+    })), {route: '#details', width: 390, height: 600, origin: 'null'});
+    assert.equal(await tab.evaluate(() => window.opener), null);
+    await tab.bringToFront();
+    await frame.getByRole('button', {name: '确定'}).press('Enter');
+    await frame.getByRole('button', {name: '已点击'}).waitFor({timeout: 3000});
+    assert.equal(await page.locator('#previewDialog').isVisible(), true);
+    assert.equal(server.writes.length, 0);
   });
 });

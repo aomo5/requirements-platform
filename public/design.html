@@ -112,7 +112,15 @@
     <div class="dialog-actions"><button id="exportButton">导出 HTML</button><button id="refreshEditor">刷新预览</button><button id="applyHtml" class="primary">完成</button></div>
   </dialog>
   <dialog id="previewDialog" class="preview-dialog" aria-labelledby="previewTitle">
-    <div class="dialog-heading"><h2 id="previewTitle">页面预览</h2><div class="preview-tools"><div class="preview-tool-group"><button id="previewCompare" aria-pressed="false" hidden>并排对比</button></div><div class="preview-tool-group preview-scale-group" role="group" aria-label="预览缩放"><button id="previewFit" aria-pressed="true">适应窗口</button><button id="previewActual" aria-pressed="false">100%</button></div><div class="preview-tool-group" role="group" aria-label="切换页面"><button id="previousPage">上一页</button><button id="nextPage">下一页</button></div><div class="preview-tool-group"><button id="previewAnnotationsButton">说明</button><button id="returnCanvasButton" data-close="previewDialog">返回画布</button></div></div></div>
+    <div class="dialog-heading">
+      <h2 id="previewTitle">页面预览</h2>
+      <div class="preview-tools">
+        <div class="preview-tool-group"><button id="previewCompare" aria-pressed="false" hidden>并排对比</button></div>
+        <div class="preview-tool-group preview-scale-group" role="group" aria-label="预览缩放"><button id="previewFit" aria-pressed="true">适应窗口</button><button id="previewActual" aria-pressed="false">100%</button></div>
+        <div class="preview-tool-group" role="group" aria-label="切换页面"><button id="previousPage">上一页</button><button id="nextPage">下一页</button></div>
+        <div class="preview-tool-group"><button id="previewAnnotationsButton">说明</button><button id="openPageWindow" type="button">新窗口预览</button><button id="returnCanvasButton" data-close="previewDialog">返回画布</button></div>
+      </div>
+    </div>
     <div class="preview-scroll" id="previewScroll"><div id="previewCompareGrid" hidden></div><div id="previewSurface"><iframe id="fullPreview" title="页面原尺寸预览" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe></div></div>
   </dialog>
   <dialog id="descriptionDialog" class="design-description-dialog" aria-labelledby="descriptionTitle"><div class="dialog-heading"><h2 id="descriptionTitle">页面说明</h2><button class="icon-button" data-close="descriptionDialog" aria-label="关闭说明"></button></div><article id="descriptionBody" class="design-description-body"></article><textarea id="descriptionEditor" aria-label="说明正文（Markdown）" spellcheck="false" hidden></textarea><p id="descriptionError" role="alert"></p><div class="dialog-actions"><button id="descriptionEdit">编辑说明</button><button id="descriptionSave" class="primary" hidden>保存说明</button><button data-close="descriptionDialog">关闭</button></div></dialog>

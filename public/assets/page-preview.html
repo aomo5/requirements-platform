@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>页面预览 · 需求平台</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/assets/workbench-tokens.css">
+  <style>
+    body { margin: 0; background: var(--wb-bg-canvas); color: var(--wb-text-secondary); font: 400 14px/1.5 var(--wb-font-family); }
+    main { display: flex; align-items: flex-start; justify-content: safe center; min-height: 100dvh; }
+    iframe { display: block; flex: none; border: 0; background: var(--wb-bg-surface); }
+    iframe[hidden] { display: none; }
+    p { margin: 24px; text-align: center; }
+  </style>
+</head>
+<body>
+  <main>
+    <p id="previewStatus" role="status">正在加载预览…</p>
+    <iframe id="pagePreviewFrame" title="页面预览" sandbox="allow-scripts" referrerpolicy="no-referrer" hidden></iframe>
+  </main>
+  <script type="module" src="/assets/page-preview.js"></script>
+</body>
+</html>

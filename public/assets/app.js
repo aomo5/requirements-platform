@@ -6,7 +6,8 @@ import {createRequirementLinks} from "./requirement-links.js";
 import {createDocumentEditor} from "./document-editor.js";
 import {createEntryUI} from "./entry-create.js";
 import {bindAiCopy, bindCopyButton} from "./ai-context.js";
-import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mjs';
+import {createPageId} from './design-model.js';
+import {resolvePreviewTarget, previewNavigationConfig, savedPreviewHtml, savedPreviewUrl} from './preview-navigation.mjs';
 (function () {
   "use strict";
 
@@ -466,7 +467,7 @@ import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mj
     nodes.previewImage.onload = null; nodes.previewImage.onerror = null;
     nodes.previewImage.classList.add("hidden"); nodes.previewImage.removeAttribute("src");
     nodes.previewFrame.style.width = ""; nodes.previewFrame.style.height = "";
-    setLinkEnabled(nodes.openPreviewLink, false);
+    setPreviewWindowLink();
     nodes.editPreviewLink.classList.add("hidden"); nodes.annotationPreviewLink.classList.add("hidden");
     nodes.previewStage.classList.remove("saved-design-preview");
   }
@@ -477,36 +478,17 @@ import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mj
   function getPreviewItems() {
     return [...(state.entry?.design?.pages || []).filter(page=>page.status!=='planned').map((page) => ({ ...page, path: `design:${page.id}`, type: "design", updatedAt: state.entry.design.updatedAt })), ...(state.entry?.prototypes || [])];
   }
-  function previewNavigationConfig() {
-    return {origin:location.origin,entryPath:state.selectedPath,pages:(state.entry?.design?.pages||[]).map(({id,source})=>({id,source})),sources:(state.entry?.prototypes||[]).map(item=>item.path)};
+  function setPreviewWindowLink(url) {
+    nodes.openPreviewLink.classList.toggle('hidden', !url);
+    if (url) nodes.openPreviewLink.href = url;
+    else nodes.openPreviewLink.removeAttribute('href');
   }
   window.addEventListener('message',event=>{
     const message=event.data;
     if(state.activeView!=='preview'||event.source!==nodes.previewFrame.contentWindow||!state.previewBridgeToken||message?.channel!=='prototype-navigation-v1'||message.token!==state.previewBridgeToken)return;
-    const target=resolvePreviewTarget(message.href,previewNavigationConfig());if(!target)return;
+    const target=resolvePreviewTarget(message.href,previewNavigationConfig(state.entry));if(!target)return;
     state.selectedPrototypePath=`design:${target.id}`;state.previewQuery=target.query;setHash();renderPrototypeList();
   });
-  function savedPageHtml(page) {
-    const doc = new DOMParser().parseFromString(page.html, "text/html");
-    doc.querySelectorAll("base,meta[http-equiv='refresh' i]").forEach((node) => node.remove());
-    const base = doc.createElement("base");
-    const root = page.source?.startsWith(`${state.selectedPath}/`) ? page.source.slice(0, page.source.lastIndexOf("/") + 1) : `${state.selectedPath}/原型设计/`;
-    base.href = `${location.origin}/preview/${root.split("/").map(encodeURIComponent).join("/")}`;
-    const policy = doc.createElement("meta");
-    policy.httpEquiv = "Content-Security-Policy";
-    policy.content = "default-src 'none'; script-src 'unsafe-inline' 'self'; style-src 'unsafe-inline' 'self'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'none'; form-action 'none'; frame-src 'none'; object-src 'none';";
-    doc.head.prepend(base); doc.head.prepend(policy);
-    state.previewBridgeToken=crypto.randomUUID();
-    const navigation=doc.createElement('script');
-    navigation.textContent=previewBridgeScript(previewNavigationConfig(),state.previewQuery,state.previewBridgeToken);
-    base.after(navigation);
-    if (page.route && page.route.startsWith("#")) {
-      const route = doc.createElement("script");
-      route.textContent = `location.hash=${JSON.stringify(page.route).replace(/</g, "\\u003c")};`;
-      base.after(route);
-    }
-    return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
-  }
   async function renderPreviewState(current) {
     resetPreview();
     const token = state.previewRequestToken, entryPath = state.selectedPath;
@@ -525,21 +507,17 @@ import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mj
         if (!page || typeof page.html !== "string") throw new Error("画板内容不可用");
         nodes.previewStage.classList.add("saved-design-preview");
         nodes.previewFrame.style.width = `${page.width}px`; nodes.previewFrame.style.height = `${page.height}px`;
-        nodes.previewFrame.srcdoc = savedPageHtml(page);
+        state.previewBridgeToken = createPageId();
+        nodes.previewFrame.srcdoc = savedPreviewHtml(page, previewNavigationConfig(state.entry), state.previewQuery, state.previewBridgeToken);
         nodes.previewFrame.classList.remove("hidden"); nodes.previewEmpty.classList.add("hidden");
         nodes.editPreviewLink.href = designUrl(current.id); nodes.editPreviewLink.classList.remove("hidden");
         nodes.annotationPreviewLink.href = `${designUrl(current.id)}&notes=1`; nodes.annotationPreviewLink.classList.remove("hidden");
-        nodes.openPreviewLink.href = designUrl(current.id); setLinkEnabled(nodes.openPreviewLink, true);
-        controlHint(nodes.openPreviewLink, "在新窗口编辑设计");
-        nodes.openPreviewLink.setAttribute("aria-label", "在新窗口编辑设计");
+        setPreviewWindowLink(savedPreviewUrl(entryPath, current.id, state.previewQuery));
       } catch (error) {
         if (token === state.previewRequestToken && entryPath === state.selectedPath) previewMessage(error.message || "画板加载失败", true);
       }
       return;
     }
-    nodes.openPreviewLink.href = current.previewUrl; setLinkEnabled(nodes.openPreviewLink, true);
-    controlHint(nodes.openPreviewLink, "新窗口打开源文件");
-    nodes.openPreviewLink.setAttribute("aria-label", "新窗口打开源文件");
     if (current.type !== "image") {
       try {
         const response = await fetch(current.previewUrl, { method: "HEAD" });
@@ -547,12 +525,12 @@ import {resolvePreviewTarget, previewBridgeScript} from './preview-navigation.mj
         if (!response.ok) throw new Error(`预览文件不可用（${response.status}）`);
       } catch (error) {
         if (token === state.previewRequestToken && entryPath === state.selectedPath) {
-          setLinkEnabled(nodes.openPreviewLink, false);
           previewMessage(error.message || "预览文件加载失败", true);
         }
         return;
       }
     }
+    setPreviewWindowLink(current.previewUrl);
     const element = current.type === "image" ? nodes.previewImage : nodes.previewFrame;
     element.onload = () => { if (token === state.previewRequestToken && entryPath === state.selectedPath) nodes.previewEmpty.classList.add("hidden"); };
     element.onerror = () => { if (token === state.previewRequestToken && entryPath === state.selectedPath) { element.classList.add("hidden"); previewMessage("预览文件加载失败", true); } };
@@ -880,7 +858,6 @@ iconButtons(document, [
   ["annotationPreviewLink", "link", "元素关联"],
   ["editPreviewLink", "edit", "编辑此页面"],
   ["downloadDocLink", "download", "下载当前文档"],
-  ["openPreviewLink", "external", "新窗口打开预览"],
   ["newFlowLink", "plus", "新建流程"],
   ["linkFlowLink", "link", "关联已有流程"],
   ["openFlowLink", "edit", "编辑流程"],
